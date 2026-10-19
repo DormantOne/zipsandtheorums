@@ -1,0 +1,408 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>From the square: circle, corner triangles, and the rest</title>
+<style>
+  :root {
+    --paper: #eef1f4; --sheet: #f8fafb; --ink: #1b2430; --muted: #5b6676; --grid: #e2e7ec; --rule: #c9d1da;
+    --core: #0f8a6c; --tri: #d08a1c; --gap: #3f63c9; --hi: #d43d51;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --paper: #0f141a; --sheet: #151b23; --ink: #e3e8ee; --muted: #8e9aa8; --grid: #1e2630; --rule: #2c3643;
+      --core: #4fd1ac; --tri: #f5b54a; --gap: #7fa2ff; --hi: #ff7f8e;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink);
+    font: 16px/1.55 "Avenir Next", Avenir, "Century Gothic", Futura, "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 32px 20px 56px; }
+  h1 { font-size: 32px; line-height: 1.12; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 10px; }
+  h2 { font-size: 21px; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 8px; }
+  p { margin: 0 0 10px; }
+  .lede { color: var(--muted); max-width: 66ch; margin-bottom: 20px; }
+  .note { color: var(--muted); font-size: 14.5px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px 26px; align-items: center; margin-bottom: 18px; }
+  .controls label { display: inline-flex; gap: 8px; align-items: center; }
+  input[type=number] { font: inherit; width: 6.5ch; padding: 4px 8px; border: 1.5px solid var(--rule); border-radius: 6px; background: var(--sheet); color: var(--ink); }
+  :focus-visible { outline: 2px solid var(--gap); outline-offset: 2px; }
+  .sheet { border: 1.5px solid var(--rule); border-radius: 10px; background-color: var(--sheet); }
+  .graph { background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 24px 24px; }
+  .top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+  .nest { margin: 0; padding: 14px; }
+  .nest svg { display: block; width: 100%; height: auto; }
+  .pad { padding: 18px 18px 12px; }
+  .f-core { fill: color-mix(in oklab, var(--core) 32%, var(--sheet)); stroke: none; }
+  .f-tri { fill: color-mix(in oklab, var(--tri) 62%, var(--sheet)); stroke: none; }
+  .f-gap { fill: color-mix(in oklab, var(--gap) 14%, var(--sheet)); stroke: none; }
+  .edge { fill: none; stroke: color-mix(in oklab, var(--ink) 55%, transparent); stroke-width: 0.9; stroke-linejoin: round; }
+  .limit { fill: none; stroke: var(--hi); stroke-width: 1.6; stroke-dasharray: 5 4; }
+  .ledger { display: grid; grid-template-columns: auto 1fr; gap: 10px 12px; align-items: baseline; margin-bottom: 14px; }
+  .ledger .sw { width: 14px; height: 14px; border-radius: 3px; transform: translateY(2px); }
+  .ledger .val { font-size: 25px; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; line-height: 1.15; }
+  .ledger .lab { font-size: 14.5px; color: var(--muted); }
+  .bar { display: flex; height: 14px; border-radius: 4px; overflow: hidden; margin: 4px 0 10px; }
+  .b-core { background: color-mix(in oklab, var(--core) 60%, var(--sheet)); }
+  .b-tri { background: color-mix(in oklab, var(--tri) 70%, var(--sheet)); }
+  .b-gap { background: color-mix(in oklab, var(--gap) 30%, var(--sheet)); }
+  svg.chart { display: block; width: 100%; overflow: visible; }
+  .chart text { font: 12px "Avenir Next", Avenir, "Segoe UI", system-ui, sans-serif; fill: var(--muted); }
+  .chart .gl { stroke: color-mix(in oklab, var(--ink) 18%, transparent); }
+  .chart .ref { stroke: var(--hi); stroke-width: 1.1; stroke-dasharray: 3 4; }
+  section { margin-top: 30px; }
+  .formula { font-size: 17px; margin: 8px 0 12px; padding-left: 14px; border-left: 3px solid var(--tri); max-width: 72ch; }
+  .formula div { margin: 4px 0; }
+  .tablewrap { max-height: 520px; overflow: auto; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 13.5px; }
+  th, td { text-align: right; padding: 6px 9px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { position: sticky; top: 0; background: var(--sheet); color: var(--muted); font-weight: 600; }
+  @media (max-width: 820px) { .top { grid-template-columns: 1fr; } h1 { font-size: 27px; } .ledger .val { font-size: 22px; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>From the square: circle, corner triangles, and the rest</h1>
+  <p class="lede">A pentagon goes inside a square, a hexagon inside the pentagon, and so on, each as large as possible while touching only with vertices. Every gap left behind is either a full corner triangle, where one side of the inner polygon bridges a corner and touches at both ends, or a larger irregular piece. What stays in the middle shrinks to a circle.</p>
+  <div class="controls">
+    <label>Polygons inside the square <input id="depth" type="number" min="1" max="200" value="30"></label>
+    <span id="status" class="note" aria-live="polite"></span>
+  </div>
+  <div class="top">
+    <figure class="sheet graph nest"><svg id="nest" role="img" aria-label="The nested polygons with corner triangles shaded"></svg></figure>
+    <div class="sheet pad">
+      <p class="note">Shares of the square's area in the limit</p>
+      <div class="ledger">
+        <span class="sw b-core"></span><div><div class="val" id="vC"></div><div class="lab">central circle, <span id="nC"></span></div></div>
+        <span class="sw b-tri"></span><div><div class="val" id="vT"></div><div class="lab">full corner triangles, <span id="nT"></span></div></div>
+        <span class="sw b-gap"></span><div><div class="val" id="vO"></div><div class="lab">everything else, <span id="nO"></span></div></div>
+      </div>
+      <div class="bar" id="bar" aria-hidden="true"></div>
+      <p class="note" id="ratio"></p>
+      <svg id="chart" class="chart" role="img" aria-label="How the square's area splits as polygons are added"></svg>
+    </div>
+  </div>
+  <section>
+    <h2>The exact steps</h2>
+    <p class="note">Every best fit touches with four vertices in two neighbouring pairs and is mirror-symmetric, which pins each step to a formula. With m the outer polygon's sides, the new circumradius divided by the old is</p>
+    <div class="formula">
+      <div>m even: cos(π/m) ÷ [cos(π/(m(m+1))) · cos(π/(2(m+1)))]</div>
+      <div>m odd: sin(2π/m) · cos(π/(2m)) ÷ [sin(π(m+2)/(m(m+1))) + cos(π/m) · sin(π/(m+1))]</div>
+    </div>
+    <p class="note">The circle's share of the square is π/2 times the product of the squares of these ratios. That equals 2πK²G², where K = 0.1149420448… is the Kepler–Bouwkamp constant and G = 1.3505045336… is the extra gain from letting each polygon shift off-center.</p>
+    <p class="note" id="check"></p>
+  </section>
+  <section>
+    <h2>Step by step</h2>
+    <div class="sheet tablewrap">
+      <table>
+        <thead><tr><th>Polygon</th><th>Area ÷ parent</th><th>Triangles</th><th>Their area ÷ square</th><th>Rest of ring ÷ square</th><th>Left in middle</th><th>Optimizer − formula</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<script>
+
+// ---------- geometry core (no DOM) ----------
+const TAU = 2 * Math.PI;
+const A_LAW = 3 * Math.PI ** 2 / 4;
+const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+const lcm = (a, b) => a / gcd(a, b) * b;
+const det3 = (a, b, c) => a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0]) + a[2] * (b[0] * c[1] - b[1] * c[0]);
+const NAMES = { 3: 'triangle', 4: 'square', 5: 'pentagon', 6: 'hexagon', 7: 'heptagon', 8: 'octagon', 9: 'nonagon', 10: 'decagon', 11: 'hendecagon', 12: 'dodecagon' };
+const nameOf = n => NAMES[n] || `${n}-gon`;
+
+// Unit regular m-gon: circumradius 1, centre 0, vertex 0 at angle 0. Edge j has its outward normal at (2j+1)π/m.
+function makeOuter(m) {
+  const d = Math.cos(Math.PI / m);
+  return { m, d, normals: Array.from({ length: m }, (_, j) => { const a = (2 * j + 1) * Math.PI / m; return [Math.cos(a), Math.sin(a), a]; }) };
+}
+
+// With the turn fixed, "largest inner n-gon" is a linear program in (cx, cy, r):
+// for every edge, centre·normal + r·(reach of the unit n-gon along that normal) <= d.
+function rowsAt(O, n, rot) {
+  const st = TAU / n;
+  return O.normals.map(([nx, ny, a]) => {
+    let t = (a - rot) % st; if (t < 0) t += st;
+    return [nx, ny, Math.cos(Math.min(t, st - t)), O.d];
+  });
+}
+
+function bestVertex(rows, W) {
+  let best = null;
+  const sub = (R, c) => [0, 1, 2].map(i => (i === c ? R[3] : R[i]));
+  for (let a = 0; a < W.length; a++) for (let b = a + 1; b < W.length; b++) for (let c = b + 1; c < W.length; c++) {
+    const A = rows[W[a]], B = rows[W[b]], C = rows[W[c]], D = det3(A, B, C);
+    if (Math.abs(D) < 1e-14) continue;
+    const x = [0, 1, 2].map(i => det3(sub(A, i), sub(B, i), sub(C, i)) / D);
+    if (W.some(j => { const R = rows[j]; return R[0] * x[0] + R[1] * x[1] + R[2] * x[2] > R[3] + 1e-12; })) continue;
+    if (!best || x[2] > best[2]) best = x;
+  }
+  return best;
+}
+
+// Exact LP with a growing working set: solve on a few edges, add the worst-violated edge, repeat.
+function solveLP(rows, hint) {
+  const m = rows.length, W = [];
+  for (const j of [0, Math.round(m / 3) % m, Math.round(2 * m / 3) % m, ...hint]) if (!W.includes(j)) W.push(j);
+  for (let it = 0; it < 3 * m + 10; it++) {
+    const x = bestVertex(rows, W);
+    let worst = -1, wv = 1e-12;
+    for (let j = 0; j < m; j++) {
+      if (W.includes(j)) continue;
+      const R = rows[j], v = R[0] * x[0] + R[1] * x[1] + R[2] * x[2] - R[3];
+      if (v > wv) { wv = v; worst = j; }
+    }
+    if (worst < 0) return { x, tight: W.filter(j => { const R = rows[j]; return R[3] - (R[0] * x[0] + R[1] * x[1] + R[2] * x[2]) < 1e-9; }) };
+    W.push(worst);
+  }
+  throw new Error('LP did not converge');
+}
+
+function fitter(O, n) { // warm-started: consecutive turns reuse the last tight edges
+  let hint = [];
+  return rot => { const s = solveLP(rowsAt(O, n, rot), hint); hint = s.tight; return { cx: s.x[0], cy: s.x[1], r: s.x[2], rot }; };
+}
+
+const TOUCH = 1e-11;
+function inspect(O, n, p) { // contacts, per-vertex clearance, and whether two vertices share one edge (a side lying flat)
+  const perEdge = new Array(O.m).fill(0), touch = [], gaps = [];
+  for (let k = 0; k < n; k++) {
+    const a = p.rot + TAU * k / n, x = p.cx + p.r * Math.cos(a), y = p.cy + p.r * Math.sin(a);
+    let g = Infinity, hit = false;
+    for (let j = 0; j < O.m; j++) {
+      const s = O.d - (O.normals[j][0] * x + O.normals[j][1] * y);
+      if (s < TOUCH) { perEdge[j]++; hit = true; }
+      if (s < g) g = s;
+    }
+    gaps.push(Math.max(0, g));
+    if (hit) touch.push(k);
+  }
+  return { touch, gaps, flat: perEdge.some(c => c >= 2) };
+}
+
+function golden(f, lo, hi) { // maximise f on [lo, hi]
+  const g = (Math.sqrt(5) - 1) / 2;
+  let a = hi - g * (hi - lo), b = lo + g * (hi - lo), fa = f(a), fb = f(b);
+  for (let i = 0; i < 45; i++) {
+    if (fa < fb) { lo = a; a = b; fa = fb; b = lo + g * (hi - lo); fb = f(b); }
+    else { hi = b; b = a; fb = fa; a = hi - g * (hi - lo); fa = f(a); }
+  }
+  return (lo + hi) / 2;
+}
+
+const areaRatio = (m, n, r) => n * r * r * Math.sin(TAU / n) / (m * Math.sin(TAU / m));
+
+// One step, an n-gon inside the unit m-gon: sweep the turn over one symmetry cycle, then sharpen
+// every peak (locked placements) and every dip (balance points) of the achievable size.
+function analyse(m, n, N = 90) {
+  const O = makeOuter(m), P = TAU / lcm(m, n), dt = P / N, fit = fitter(O, n), F = t => fit(t).r;
+  const raw = Array.from({ length: N }, (_, i) => F(i * dt));
+  const cands = [];
+  for (let i = 0; i < N; i++) {
+    const a = raw[(i + N - 1) % N], b = raw[i], c = raw[(i + 1) % N], lo = (i - 1) * dt, hi = (i + 1) * dt;
+    const found = [];
+    if (b >= a && b >= c) found.push(['max', golden(F, lo, hi)]);
+    if (b <= a && b <= c) found.push(['min', golden(t => -F(t), lo, hi)]);
+    for (const [kind, t] of found) {
+      const p = fit(t), tm = ((t % P) + P) % P;
+      if (cands.some(q => q.kind === kind && Math.abs(q.r - p.r) < 1e-10 && Math.min(Math.abs(q.tm - tm), P - Math.abs(q.tm - tm)) < 1e-7)) continue;
+      cands.push({ ...p, ...inspect(O, n, p), kind, tm, area: areaRatio(m, n, p.r) });
+    }
+  }
+  return { m, n, P, samples: raw.map(r => areaRatio(m, n, r)), cands };
+}
+
+// Rule: largest locked placement with vertex contacts only. If none exists, the largest balanced one.
+function choose(A, allowFlat) {
+  const bigger = (c, best) => !best || c.r > best.r + 1e-12 || (Math.abs(c.r - best.r) <= 1e-12 && c.touch.length > best.touch.length);
+  const pick = list => list.reduce((best, c) => (bigger(c, best) ? c : best), null);
+  const peaks = A.cands.filter(c => c.kind === 'max');
+  if (allowFlat) { const p = pick(peaks); return { p, status: p.flat ? 'flat' : 'locked' }; }
+  let p = pick(peaks.filter(c => !c.flat));
+  if (p) return { p, status: 'locked' };
+  p = pick(A.cands.filter(c => c.kind === 'min' && !c.flat));
+  if (p) return { p, status: 'balanced' };
+  return { p: pick(peaks), status: 'flat' };
+}
+
+const verts = p => Array.from({ length: p.n }, (_, k) => {
+  const a = p.rot + TAU * k / p.n;
+  return [p.cx + p.R * Math.cos(a), p.cy + p.R * Math.sin(a)];
+});
+
+function turnAngle(P, Q) { // smallest angle between a side of Q and a side of P, degrees
+  let best = 90;
+  for (let j = 0; j < P.n; j++) for (let k = 0; k < Q.n; k++) {
+    let d = (P.rot + Math.PI * (2 * j + 1) / P.n) - (Q.rot + Math.PI * (2 * k + 1) / Q.n);
+    d = ((d % Math.PI) + Math.PI) % Math.PI;
+    best = Math.min(best, Math.min(d, Math.PI - d) * 180 / Math.PI);
+  }
+  return best;
+}
+
+// ---------- the chain from the square ----------
+// Limits from an exact high-precision run (closed-form steps + zeta-function tail); see the formulas on the page.
+const C_INF = 0.15140136806501059096, T_INF = 0.3843505279, O_INF = 1 - C_INF - T_INF;
+
+// Closed form for the best step, read off the optimizer and checked exactly: new circumradius / old, m = old sides.
+function formulaR(m) {
+  const x = Math.PI / m, z = Math.PI / (m + 1);
+  return m % 2 === 0
+    ? Math.cos(x) / (Math.cos(x - z) * Math.cos(z / 2))
+    : Math.sin(2 * x) * Math.cos(x / 2) / (Math.sin(2 * x - z) + Math.cos(x) * Math.sin(z));
+}
+
+const shoelace = pts => Math.abs(pts.reduce((s, [x, y], i) => { const [u, v] = pts[(i + 1) % pts.length]; return s + x * v - u * y; }, 0)) / 2;
+
+// Split the ring between P and the polygon Q inside it at the contact points. A piece is a full corner
+// triangle when one side of Q bridges exactly one corner of P, touching at both ends.
+function decompose(P, Q) {
+  const PV = verts(P), QV = verts(Q), m = P.n, n = Q.n, tol = 1e-9 * P.R;
+  const E = PV.map((p, e) => {
+    const q = PV[(e + 1) % m], L = Math.hypot(q[0] - p[0], q[1] - p[1]), nx = (q[1] - p[1]) / L, ny = (p[0] - q[0]) / L;
+    return { nx, ny, d: nx * p[0] + ny * p[1] };
+  });
+  const con = [];
+  QV.forEach(([x, y], k) => E.forEach((h, e) => { if (h.d - (h.nx * x + h.ny * y) < tol) con.push([k, e]); }));
+  con.sort((a, b) => a[0] - b[0]);
+  const pieces = [];
+  for (let c = 0; c < con.length; c++) {
+    const [ka, ea] = con[c], [kb, eb] = con[(c + 1) % con.length];
+    const corners = ((eb - ea) % m + m) % m, inner = ((kb - ka) % n + n) % n;
+    if (!corners) continue;
+    const pts = [QV[ka]];
+    for (let s = 1; s <= corners; s++) pts.push(PV[(ea + s) % m]);
+    pts.push(QV[kb]);
+    for (let s = inner - 1; s >= 1; s--) pts.push(QV[(ka + s) % n]);
+    pieces.push({ pts, tri: pts.length === 3, area: shoelace(pts) });
+  }
+  return pieces;
+}
+
+const cache = new Map(); // m -> analysis of the (m+1)-gon in the m-gon
+const SQUARE_AREA = 2;   // the square has circumradius 1
+
+function nest(D) {
+  const polys = [{ n: 4, cx: 0, cy: 0, R: 1, rot: -Math.PI / 4 }]; // flat base
+  const steps = [];
+  let A = 1, T = 0, O = 0;
+  for (let i = 1; i <= D; i++) {
+    const m = i + 3, n = m + 1, { p } = choose(cache.get(m), false), P = polys[i - 1];
+    let Q = null;
+    for (let j = 0; j < m; j++) { // the m symmetric copies of the fit: keep the most centred, then the lowest
+      const a = P.rot + TAU * j / m, c = Math.cos(a), s = Math.sin(a);
+      const q = { n, R: P.R * p.r, rot: a + p.rot, cx: P.cx + P.R * (c * p.cx - s * p.cy), cy: P.cy + P.R * (s * p.cx + c * p.cy) };
+      const dq = Math.abs(q.cx - P.cx), dQ = Q ? Math.abs(Q.cx - P.cx) : Infinity, tol = 1e-9 * P.R;
+      if (!Q || dq < dQ - tol || (Math.abs(dq - dQ) <= tol && q.cy < Q.cy - tol)) Q = q;
+    }
+    polys.push(Q);
+    const pieces = decompose(P, Q), tri = pieces.filter(x => x.tri).reduce((s, x) => s + x.area, 0) / SQUARE_AREA;
+    const ring = A * (1 - p.area);
+    T += tri; O += ring - tri; A *= p.area;
+    steps.push({ i, m, n, a: p.area, A, tri, other: ring - tri, T, O, triCount: pieces.filter(x => x.tri).length, pieces,
+      diff: p.area - areaRatio(m, n, formulaR(m)), check: pieces.reduce((s, x) => s + x.area, 0) / SQUARE_AREA - ring });
+  }
+  return { polys, steps };
+}
+
+// ---------- page ----------
+if (typeof document !== 'undefined') {
+  const $ = id => document.getElementById(id);
+  const depthEl = $('depth');
+  let current = null, runId = 0;
+  const lin = (d0, d1, r0, r1) => v => r0 + (v - d0) / ((d1 - d0) || 1) * (r1 - r0);
+  const niceStep = span => [1, 2, 5, 10, 20, 25, 50, 100].find(s => span / s <= 8) || 200;
+  const fmt = (v, d = 6) => v.toFixed(d);
+
+  function frame(svg, ratio, minH, maxH) {
+    const W = Math.max(280, Math.round(svg.getBoundingClientRect().width || 520));
+    const H = Math.round(Math.min(maxH, Math.max(minH, W * ratio)));
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('height', H);
+    return { W, H };
+  }
+
+  function drawNest() {
+    const { polys, steps } = current, svg = $('nest');
+    const V0 = verts(polys[0]), pad = 0.04, pt = ([x, y]) => `${x.toFixed(6)},${(-y).toFixed(6)}`;
+    const xs = V0.map(v => v[0]), ys = V0.map(v => -v[1]), x0 = Math.min(...xs) - pad, y0 = Math.min(...ys) - pad;
+    svg.setAttribute('viewBox', `${x0} ${y0} ${Math.max(...xs) + pad - x0} ${Math.max(...ys) + pad - y0}`);
+    let s = `<polygon points="${V0.map(pt).join(' ')}" class="f-gap"/>`;
+    for (const st of steps) for (const pc of st.pieces) s += `<polygon points="${pc.pts.map(pt).join(' ')}" class="${pc.tri ? 'f-tri' : 'f-gap'}"/>`;
+    const last = polys[polys.length - 1];
+    s += `<polygon points="${verts(last).map(pt).join(' ')}" class="f-core"/>`;
+    for (const p of polys) s += `<polygon points="${verts(p).map(pt).join(' ')}" class="edge" vector-effect="non-scaling-stroke"/>`;
+    const R = Math.sqrt(C_INF * SQUARE_AREA / Math.PI);
+    s += `<circle cx="${last.cx}" cy="${-last.cy}" r="${R}" class="limit" vector-effect="non-scaling-stroke"/>`;
+    svg.innerHTML = s;
+  }
+
+  function writeLedger() {
+    const { steps, D } = current, st = steps[steps.length - 1];
+    $('vC').textContent = C_INF.toFixed(16);
+    $('vT').textContent = T_INF.toFixed(9);
+    $('vO').textContent = O_INF.toFixed(9);
+    $('nC').textContent = `after ${D}: ${fmt(st.A)}`;
+    $('nT').textContent = `after ${D}: ${fmt(st.T)}`;
+    $('nO').textContent = `after ${D}: ${fmt(st.O)}`;
+    $('bar').innerHTML = `<span class="b-core" style="width:${C_INF * 100}%"></span><span class="b-tri" style="width:${T_INF * 100}%"></span><span class="b-gap" style="width:${O_INF * 100}%"></span>`;
+    $('ratio').textContent = `Outside the circle, corner triangles take ${(T_INF / (1 - C_INF) * 100).toFixed(2)}% of the area, and the triangles-to-rest ratio is ${(T_INF / O_INF).toFixed(4)}.`;
+    const worst = Math.max(...steps.map(s => Math.abs(s.diff)));
+    $('check').textContent = `The optimizer's best fit matches this formula at every step on this page; the largest difference in area ratio is ${worst.toExponential(1)}.`;
+  }
+
+  function drawChart() {
+    const svg = $('chart'), { steps } = current, { W, H } = frame(svg, 0.55, 220, 320);
+    const M = { l: 40, r: 14, t: 14, b: 40 }, D = steps.length;
+    const x = lin(0, D, M.l, W - M.r), y = lin(0, 1, H - M.b, M.t);
+    const ks = [0, ...steps.map(s => s.i)], core = [1, ...steps.map(s => s.A)], tri = [0, ...steps.map(s => s.T)];
+    const band = (lo, hi, cls) => `<polygon class="${cls}" points="${ks.map((k, i) => `${x(k).toFixed(1)},${y(hi[i]).toFixed(1)}`).join(' ')} ${ks.slice().reverse().map((k, i) => `${x(k).toFixed(1)},${y(lo[ks.length - 1 - i]).toFixed(1)}`).join(' ')}"/>`;
+    const zero = ks.map(() => 0), one = ks.map(() => 1), coreTri = core.map((c, i) => c + tri[i]);
+    let s = band(zero, core, 'f-core') + band(core, coreTri, 'f-tri') + band(coreTri, one, 'f-gap');
+    for (const v of [0, 0.25, 0.5, 0.75, 1]) s += `<line class="gl" x1="${M.l}" x2="${W - M.r}" y1="${y(v)}" y2="${y(v)}"/><text x="${M.l - 7}" y="${y(v)}" text-anchor="end" dominant-baseline="middle">${v}</text>`;
+    const st = niceStep(D);
+    for (let k = 0; k <= D; k += st) s += `<text x="${x(k)}" y="${H - M.b + 17}" text-anchor="middle">${k}</text>`;
+    s += `<line class="ref" x1="${M.l}" x2="${W - M.r}" y1="${y(C_INF)}" y2="${y(C_INF)}"/><line class="ref" x1="${M.l}" x2="${W - M.r}" y1="${y(C_INF + T_INF)}" y2="${y(C_INF + T_INF)}"/>`;
+    s += `<text x="${W - M.r}" y="${H - 2}" text-anchor="end">polygons inside the square</text>`;
+    svg.innerHTML = s;
+  }
+
+  function drawTable() {
+    $('rows').innerHTML = current.steps.map(st => `<tr><td>${nameOf(st.n)}</td><td>${fmt(st.a)}</td><td>${st.triCount}</td>` +
+      `<td>${st.tri.toExponential(3)}</td><td>${st.other.toExponential(3)}</td><td>${fmt(st.A)}</td><td>${Math.abs(st.diff) < 5e-17 ? '0' : st.diff.toExponential(0)}</td></tr>`).join('');
+  }
+
+  function render() { if (!current) return; drawNest(); writeLedger(); drawChart(); drawTable(); }
+
+  async function run() {
+    const id = ++runId, D = Math.min(200, Math.max(1, parseInt(depthEl.value, 10) || 30));
+    const t0 = performance.now(); let tick = t0;
+    for (let m = 4; m < D + 4; m++) {
+      if (cache.has(m)) continue;
+      cache.set(m, analyse(m, m + 1));
+      if (performance.now() - tick > 40) {
+        $('status').textContent = `Optimizing step ${m - 3} of ${D}…`;
+        await new Promise(r => setTimeout(r, 0));
+        if (id !== runId) return;
+        tick = performance.now();
+      }
+    }
+    if (id !== runId) return;
+    current = { D, ...nest(D) };
+    $('status').textContent = `${D} polygons solved in ${((performance.now() - t0) / 1000).toFixed(2)} s`;
+    render();
+  }
+
+  let debounce;
+  depthEl.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(run, 300); });
+  let resizeT; window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => current && drawChart(), 120); });
+  run();
+}
+</script>
+</body>
+</html>

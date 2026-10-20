@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="author" content="Concept: Adam Sohnen. Built and signed by Opus 5.5.">
+<title>Nest Cipher 6: jump + lattice, the hybrid handshake</title>
+<style>
+  :root { --paper:#eef1f4; --sheet:#f8fafb; --ink:#1b2430; --muted:#5b6676; --grid:#e2e7ec; --rule:#c9d1da; --core:#0f8a6c; --tri:#d08a1c; --gap:#3f63c9; --hi:#d43d51; --vio:#7a4cc2; }
+  @media (prefers-color-scheme: dark) { :root { color-scheme: dark; --paper:#0f141a; --sheet:#151b23; --ink:#e3e8ee; --muted:#8e9aa8; --grid:#1e2630; --rule:#2c3643; --core:#4fd1ac; --tri:#f5b54a; --gap:#7fa2ff; --hi:#ff7f8e; --vio:#b99bff; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.55 "Avenir Next", Avenir, "Segoe UI", system-ui, sans-serif; }
+  main { max-width:1180px; margin:0 auto; padding:30px 20px 40px; }
+  h1 { font-size:32px; line-height:1.12; font-weight:600; letter-spacing:-0.02em; margin:0 0 10px; }
+  h2 { font-size:21px; font-weight:600; margin:0 0 8px; }
+  h3 { font-size:16px; font-weight:600; margin:0 0 4px; }
+  p { margin:0 0 10px; }
+  .lede { color:var(--muted); max-width:82ch; margin-bottom:18px; }
+  .note { color:var(--muted); font-size:14.5px; }
+  .narrow { max-width:84ch; }
+  .mono { font-family:ui-monospace, "SF Mono", Consolas, monospace; font-size:13px; word-break:break-all; }
+  .sheet { border:1.5px solid var(--rule); border-radius:10px; background:var(--sheet); }
+  .pad { padding:18px; }
+  .graph { background-image:linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size:24px 24px; }
+  section { margin-top:32px; }
+  textarea { width:100%; min-height:64px; resize:vertical; font:13.5px ui-monospace, Consolas, monospace; padding:7px 9px; border:1.5px solid var(--rule); border-radius:6px; background:var(--paper); color:var(--ink); }
+  textarea.tall { min-height:110px; }
+  :focus-visible { outline:2px solid var(--gap); outline-offset:2px; }
+  button, select { font:inherit; font-weight:600; padding:7px 14px; border-radius:7px; border:1.5px solid var(--rule); background:var(--paper); color:var(--ink); cursor:pointer; }
+  button.go { background:color-mix(in oklab, var(--core) 30%, var(--sheet)); }
+  .btns { display:flex; gap:10px; margin:10px 0; flex-wrap:wrap; align-items:center; }
+  .tag { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:2px 8px; border-radius:99px; white-space:nowrap; }
+  .pub { background:color-mix(in oklab, var(--gap) 22%, var(--sheet)); }
+  .sec { background:color-mix(in oklab, var(--hi) 22%, var(--sheet)); }
+  .der { background:color-mix(in oklab, var(--tri) 28%, var(--sheet)); }
+  .keys { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px; }
+  .card { padding:14px; }
+  .stage { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:18px; align-items:start; }
+  .two { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:18px; align-items:start; }
+  figure { margin:0; padding:10px; } figure svg { display:block; width:100%; height:auto; }
+  .bg { fill:none; stroke:color-mix(in oklab, var(--ink) 30%, transparent); stroke-width:.6; }
+  .sq { fill:color-mix(in oklab, var(--gap) 8%, var(--sheet)); stroke:color-mix(in oklab, var(--ink) 55%, transparent); stroke-width:1.2; }
+  .live { fill:color-mix(in oklab, var(--core) 14%, transparent); stroke:var(--core); stroke-width:2; }
+  .ghost { fill:none; stroke:color-mix(in oklab, var(--core) 45%, transparent); stroke-width:1; stroke-dasharray:3 3; }
+  .walkS { fill:none; stroke:var(--gap); stroke-width:5; stroke-linecap:round; stroke-linejoin:round; opacity:.8; }
+  .walkC { fill:none; stroke:var(--tri); stroke-width:5; stroke-linecap:round; stroke-linejoin:round; opacity:.9; }
+  .vx { fill:color-mix(in oklab, var(--ink) 45%, transparent); }
+  .start { fill:none; stroke:var(--hi); stroke-width:2; }
+  .dot { fill:var(--hi); }
+  .ring text, .tring text { fill:var(--muted); font-family:ui-monospace, Consolas, monospace; text-anchor:middle; dominant-baseline:central; }
+  .ring text.on { fill:var(--hi); font-weight:700; }
+  .ring text.from { fill:var(--ink); text-decoration:underline; }
+  .ring text.off { opacity:.4; }
+  .tring text.a { fill:var(--gap); font-weight:700; } .tring text.b { fill:var(--tri); font-weight:700; } .tring text.s { fill:var(--hi); font-weight:700; }
+  .chA { stroke:var(--gap); stroke-width:2.2; opacity:.85; } .chB { stroke:var(--tri); stroke-width:2.2; opacity:.85; }
+  .chA.old, .chB.old { opacity:.18; }
+  .lpt { fill:color-mix(in oklab, var(--ink) 50%, transparent); }
+  .lhid { fill:var(--core); } .ltgt { fill:var(--hi); }
+  .lbasis { stroke:var(--vio); stroke-width:2.5; }
+  .dials { display:grid; grid-template-columns:repeat(8, minmax(0,1fr)); gap:4px; max-width:560px; }
+  .dials svg { width:100%; height:auto; display:block; }
+  .eq { font-variant-numeric:tabular-nums; font-size:15px; }
+  .eq div { display:flex; justify-content:space-between; gap:10px; padding:3px 0; border-bottom:1px dashed var(--grid); }
+  .eq .tot { font-weight:700; border-bottom:none; }
+  .cS { color:var(--gap); font-weight:600; } .cC { color:var(--tri); font-weight:600; } .cR { color:var(--hi); font-weight:600; } .cG { color:var(--core); font-weight:600; } .cV { color:var(--vio); font-weight:600; }
+  .cA { color:var(--gap); font-weight:600; } .cB { color:var(--tri); font-weight:600; }
+  .out { font:600 24px ui-monospace, Consolas, monospace; letter-spacing:.06em; min-height:1.5em; word-break:break-all; }
+  .out .cur { background:color-mix(in oklab, var(--hi) 25%, transparent); border-radius:3px; }
+  .phase { font-weight:600; min-height:2.8em; }
+  .segs { font:13px ui-monospace, Consolas, monospace; line-height:1.9; max-height:150px; overflow:auto; }
+  .segs span { padding:1px 4px; border-radius:4px; }
+  .segs span.cur { background:color-mix(in oklab, var(--hi) 25%, transparent); font-weight:700; }
+  .ok { color:var(--core); font-weight:600; } .bad { color:var(--hi); font-weight:600; }
+  ol, ul { max-width:84ch; padding-left:22px; } li { margin-bottom:7px; }
+  .warn { font-size:14.5px; border-left:3px solid var(--tri); padding-left:12px; max-width:84ch; }
+  .verdict { border-left:4px solid var(--core); padding:12px 16px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--grid); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; }
+  td.big { font-family:ui-monospace, Consolas, monospace; font-size:12.5px; word-break:break-all; }
+  tr.grp td { background:color-mix(in oklab, var(--vio) 9%, var(--sheet)); font-weight:600; }
+  .hs td:first-child { white-space:nowrap; }
+  .sig { margin-top:40px; padding-top:18px; border-top:1.5px solid var(--rule); display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; align-items:baseline; }
+  .sig .name { font:italic 600 22px Georgia, "Times New Roman", serif; letter-spacing:.01em; }
+  @media (max-width:900px) { .stage, .keys, .two { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Nest Cipher 6: jump + lattice, the hybrid handshake</h1>
+  <p class="lede">Two strangers agree on a secret in public <b>two ways at once</b>. The <b>jump handshake</b> hops around a prime-cornered polygon of the nest. The <b>lattice handshake</b> hides small noise inside a 640-dimensional grid seeded by the nest's own area digits, with no prime anywhere. Both secrets are mixed into one. Then every letter rides its own secret nest polygon. A quantum computer could someday break the jump half, but not, as far as anyone knows, the lattice half.</p>
+
+  <section style="margin-top:0">
+    <h2>1. The jump handshake, small enough to watch</h2>
+    <p class="note narrow">The <b>41-gon</b> is depth 37 of the nest. 41 is prime, so vertices 1–40 form a closed loop under multiplication. <b>One jump</b> means: from vertex <i>v</i>, go to vertex <i>v × g</i>, wrapping around 41. With <i>g</i> = 6 you visit all 40 vertices before coming back: 1 → 6 → 36 → 11 → 25 → 27 → 39 → … with no pattern to follow back.</p>
+    <div class="btns">
+      <button class="go" id="tPlay">▶ Animate the jump handshake</button>
+      <button id="tNew">New toy secrets</button>
+      <label class="note">Speed <select id="tSpeed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label>
+    </div>
+    <div class="stage">
+      <figure class="sheet graph"><svg id="tSvg" role="img" aria-label="Alice and Bob jumping around the 41-gon"></svg></figure>
+      <div>
+        <div class="sheet pad"><p class="phase" id="tPhase"></p></div>
+        <div class="sheet pad hs" style="margin-top:12px">
+          <table><thead><tr><th>Step</th><th><span class="cA">Alice</span></th><th><span class="cB">Bob</span></th><th>Eve sees</th></tr></thead>
+            <tbody id="tRows"></tbody></table>
+        </div>
+        <p class="note" style="margin-top:12px" id="tEve"></p>
+      </div>
+    </div>
+    <ol class="note" style="margin-top:12px">
+      <li><b>Round 1:</b> Alice starts on vertex 1 and makes <i>a</i> secret jumps of size <i>g</i>. She announces where she lands, <span class="cA">A</span>. Bob does the same with <i>b</i> jumps and announces <span class="cB">B</span>.</li>
+      <li><b>Round 2: the other person's landing vertex becomes the new jump size.</b> Alice makes her same <i>a</i> jumps, each ×<span class="cB">B</span>. Bob makes his <i>b</i> jumps, each ×<span class="cA">A</span>. Both land on the same vertex <span class="cR">S</span>.</li>
+      <li><b>Eve</b> sees <span class="cA">A</span> and <span class="cB">B</span>. To get <span class="cR">S</span> she needs a jump count back from a landing vertex: the <b>discrete logarithm problem</b>. Ordinary computers can't do that on a polygon with a 617-digit number of corners. A large quantum computer could, using Shor's algorithm. That's why the lattice half exists.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>2. The lattice handshake: noise on a grid, read off the square's corners</h2>
+    <div class="two">
+      <div>
+        <p class="note narrow"><b>The hard problem.</b> Take a grid (a lattice) and a point that sits <i>near</i> one of its grid points, nudged by a little noise. Which grid point is it near? In 2 dimensions, as in the picture, you can see the answer at a glance. In 640 dimensions, nobody knows a fast way, with an ordinary computer <i>or</i> a quantum one. This is the <b>Learning With Errors</b> problem (LWE).</p>
+        <p class="note narrow"><b>No prime anywhere.</b> Every number lives on a dial of 2<sup>15</sup> = 32,768 positions. That's a power of two, not a prime, and it doesn't need to be one: the hardness comes from the noise and the 640 dimensions, not from the size of the dial.</p>
+        <p class="note narrow"><b>Reading the key off the square.</b> Bob places each piece of the key on one of the four corners of a <b>square</b>, the nest's very first polygon (depth 0), drawn on the 32,768-position dial. The noise nudges each point a little off its corner. Alice rounds to the nearest corner. As long as the noise stays under 45°, she reads every piece exactly.</p>
+        <div class="btns"><button id="lNew">New noisy point</button></div>
+      </div>
+      <figure class="sheet graph"><svg id="lSvg" role="img" aria-label="A two-dimensional grid with a hidden point and a noisy target"></svg>
+        <p class="note" style="margin:6px 4px 0"><span class="cV">—</span> basis vectors: two neighbouring pentagon vertices &nbsp; <span class="cG">●</span> hidden grid point &nbsp; <span class="cR">●</span> what Eve sees (point + noise)</p></figure>
+    </div>
+
+    <h3 style="margin-top:16px">The steps (FrodoKEM-640 sizes)</h3>
+    <ol class="note">
+      <li><b>The public grid A:</b> 640 × 640 numbers on the dial. It's generated from <span class="cV">the nest's digits</span> plus a fresh random seed, so nobody can have hand-picked it.</li>
+      <li><b>Alice:</b> picks a secret <i>S</i> made of small numbers (mostly −3 to 3) and small noise <i>E</i>. She publishes <b>B = A·S + E</b>. Without the noise, simple algebra would recover <i>S</i>. With the noise, it's the lattice problem.</li>
+      <li><b>Bob:</b> picks his own small secret <i>S′</i> and noise. He publishes <b>B′ = S′·A + noise</b>, and <b>C = S′·B + noise + the key placed on the square's corners</b>.</li>
+      <li><b>Alice:</b> computes <b>C − B′·S</b>. Almost everything cancels, because S′·A·S appears on both sides. What's left is the key plus a little noise, and rounding to the nearest corner removes the noise.</li>
+      <li><b>Eve</b> sees A, B, B′, and C. To read the key she'd need <i>S</i> or <i>S′</i>, which means solving the lattice problem.</li>
+    </ol>
+
+    <div class="sheet pad" style="margin-top:14px">
+      <h3>The nest's digits</h3>
+      <p class="note narrow">The share of the square still inside the nest's <b>60-gon</b> (depth 56), computed exactly from the closed-form step ratios on your original page to 1,024 decimal places. It plays the role π plays in the standard jump prime: "nothing up my sleeve" digits that anyone can recompute. It is <b>not</b> what makes the lattice hard. Any honestly chosen digits would do, and the fresh seed is mixed in too.</p>
+      <p class="mono" id="digits"></p>
+      <p class="note" id="digitCheck"></p>
+    </div>
+
+    <div class="sheet pad" style="margin-top:14px">
+      <h3>This session's 64 dials: the real lattice handshake</h3>
+      <p class="note narrow">Each dial is one of the 64 numbers Alice gets from C − B′·S. The four corners of the square are the four possible values of each 2-bit piece of the key. The <span class="cR">dot</span> is where Alice's number landed, and the <span class="cG">ring</span> marks the corner Bob placed it on. 64 dials × 2 bits = a 128-bit lattice key.</p>
+      <div class="dials" id="dials"></div>
+      <p class="note" id="dialNote" style="margin-top:10px"></p>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. This session's hybrid handshake</h2>
+    <p class="note narrow">Alice sends her jump vertex plus her lattice key (seed + B). Bob replies with his jump vertex plus B′ and C. Each side combines the <b>jump secret</b> and the <b>lattice secret</b>, along with a fingerprint of everything that was sent, into one shared key (HKDF-SHA-256). To read messages, Eve would have to break <b>both</b>.</p>
+    <div class="btns"><button class="go" id="newkeys">New handshake</button><span class="note" id="hsSt"></span></div>
+    <div class="sheet pad">
+      <table><thead><tr><th style="width:26%">Item</th><th>Value</th><th style="width:15%">Who knows it</th></tr></thead><tbody id="hsRows"></tbody></table>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. All the keys, and who sees what</h2>
+    <div class="keys">
+      <div class="sheet card"><span class="tag pub">public</span><h3 style="margin-top:8px">The shapes</h3>
+        <p class="note">The jump polygon (617-digit prime, <i>g</i> = 2), the 41-gon toy, the nest's digits, and the dial size 2<sup>15</sup>.</p></div>
+      <div class="sheet card"><span class="tag sec">secret · never sent</span><h3 style="margin-top:8px">Each side's secrets</h3>
+        <p class="note">The jump counts <i>a</i> and <i>b</i>, and the small lattice secrets <i>S</i> and <i>S′</i>. Each stays in its own browser tab.</p></div>
+      <div class="sheet card"><span class="tag pub">public · swapped</span><h3 style="margin-top:8px">What travels</h3>
+        <p class="note">Jump vertices <span class="cA">A</span> and <span class="cB">B</span>, the lattice seed, B, B′, C, then the sealed message: a nonce, landing vertices, and a tag.</p></div>
+      <div class="sheet card"><span class="tag sec">secret · computed</span><h3 style="margin-top:8px">Jump secret + lattice secret</h3>
+        <p class="note">Both sides reach the same two secrets. Eve reaches neither.</p></div>
+      <div class="sheet card"><span class="tag sec">secret · computed</span><h3 style="margin-top:8px">The hybrid key</h3>
+        <p class="note">Both secrets mixed into one. Read the safety number aloud to make sure no one is in the middle.</p></div>
+      <div class="sheet card"><span class="tag der">secret · per message</span><h3 style="margin-top:8px">Polygons and steps</h3>
+        <p class="note">The hybrid key plus a fresh nonce choose, for every letter, a <span class="cV">polygon</span> (40-gon to 60-gon) and a <span class="cS">step count</span>.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>5. Write and seal a message (Alice)</h2>
+    <div class="sheet pad">
+      <textarea id="msg" spellcheck="false">Meet at the square at noon</textarea>
+      <div class="btns">
+        <button class="go" id="enc">Encrypt and seal</button>
+        <span class="note" id="encSt"></span>
+      </div>
+      <p class="note" style="margin-bottom:4px">The wire, which is all Eve sees: a nonce, one landing vertex per letter, and the seal. Which polygon each letter used is <b>not</b> on the wire.</p>
+      <textarea id="wire" class="tall" spellcheck="false"></textarea>
+      <div class="btns">
+        <button id="eve">Eve: move the first letter by one vertex</button>
+        <span class="note" id="eveSt"></span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>6. Watch Bob decrypt: polygon to polygon</h2>
+    <div class="btns">
+      <button class="go" id="play">▶ Decrypt and animate</button>
+      <button id="pause">❚❚ Pause</button>
+      <button id="step">Next letter →</button>
+      <label class="note">Speed <select id="speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label>
+      <label class="note"><input type="checkbox" id="intro" checked> Descend through the nest first</label>
+    </div>
+    <div class="stage">
+      <figure class="sheet graph"><svg id="svg" role="img" aria-label="Each letter decrypted on its own secret polygon"></svg></figure>
+      <div>
+        <div class="sheet pad">
+          <p class="note" style="margin-bottom:2px">Decrypted so far</p>
+          <div class="out" id="out"></div>
+          <p class="phase" id="phase"></p>
+        </div>
+        <div class="sheet pad" style="margin-top:12px">
+          <h3 id="eqTitle">The walk for this letter</h3>
+          <div class="eq" id="eq"></div>
+        </div>
+        <div class="sheet pad" style="margin-top:12px">
+          <p class="note" style="margin-bottom:4px">Landing vertices on the wire</p>
+          <div class="segs" id="segs"></div>
+        </div>
+      </div>
+    </div>
+    <ol class="note" style="margin-top:14px">
+      <li><b>Pick the polygon.</b> The secret stream chooses a nest polygon for this letter, from the 40-gon to the 60-gon. Vertices 0–39 hold A–Z, 0–9, space, period, comma, question mark. Any vertices beyond 39 are empty seats.</li>
+      <li><b>Walk.</b> Start on the letter's vertex <i>p</i>, walk forward <span class="cS">s</span> secret segments, then the <span class="cC">chain</span>. The landing vertex is <b>L = (p + s + chain) mod m</b>.</li>
+      <li><b>Chain.</b> The next letter starts from <b>L + p</b>, so every letter depends on every letter before it.</li>
+      <li><b>Seal.</b> HMAC-SHA-256 covers the nonce and every landing vertex. Change one, and Bob refuses to decrypt anything.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Is it quantum safe?</h2>
+    <div class="sheet verdict">
+      <p><b>Believed to be, and nobody can be certain.</b> No one has proven that any public-key method is safe against quantum computers. "Quantum safe" means that decades of work by many researchers have found no fast quantum attack on these problems.</p>
+    </div>
+    <table style="margin-top:12px">
+      <thead><tr><th>Piece</th><th>Against a large quantum computer</th></tr></thead>
+      <tbody>
+        <tr><td>Jump handshake (discrete logarithm)</td><td><span class="bad">Broken</span> by Shor's algorithm, once a large enough machine exists.</td></tr>
+        <tr><td>Lattice handshake (LWE)</td><td><span class="ok">No known quantum attack.</span> A 2024 paper claimed one, and other researchers found a bug in it within about a week. The claim was withdrawn.</td></tr>
+        <tr><td>Hybrid of the two</td><td>Safe as long as <i>either</i> half holds. This is how browsers and national guidance deploy post-quantum keys today.</td></tr>
+        <tr><td>AES-256 (polygon and step choices), HMAC-SHA-256 (seal)</td><td>Quantum search roughly halves their strength, which still leaves about 128 bits. Considered safe.</td></tr>
+        <tr><td>The nest geometry, walks, and chain</td><td>Form, not strength. They neither help nor hurt.</td></tr>
+      </tbody>
+    </table>
+    <h3 style="margin-top:16px">Limits of this page specifically</h3>
+    <ul class="note">
+      <li><b>Teaching code, not the standard.</b> It uses FrodoKEM-640's sizes and error table, but it isn't byte-compatible with FrodoKEM, and it lacks FrodoKEM's extra protection for reused keys. That's acceptable only because every handshake here uses brand-new keys. It hasn't been audited and isn't hardened against timing attacks.</li>
+      <li><b>Level 1.</b> The 640 size targets NIST level 1, roughly AES-128 strength. Germany's BSI recommends the larger FrodoKEM-976 or 1344 for long-term secrets.</li>
+      <li><b>No identity check</b> except the safety number. Compare it out loud.</li>
+      <li>Alice and Bob share one page for the demo, and keys vanish on reload. <b>Not for PHI.</b></li>
+    </ul>
+    <h3 style="margin-top:14px">What's yours, and what's standard</h3>
+    <ul class="note">
+      <li><b>Yours:</b> the nest as the frame, letters as polygon vertices, segment walks, the chain, a secret polygon per letter, the jump picture of the handshake, the nest's area digits as the grid's source, and reading the key off the square's corners.</li>
+      <li><b>Standard underneath:</b> Diffie–Hellman (1976) over the RFC 3526 prime; Learning With Errors (Regev, 2005) with FrodoKEM-640's sizes; hybrid key mixing; HKDF, AES-256-CTR, and HMAC-SHA-256 from the browser's Web Crypto.</li>
+    </ul>
+  </section>
+
+  <div class="sig">
+    <div class="note">Concept: <b>Adam Sohnen</b>: the nest, segment walks, polygon-per-letter rotation, the jump handshake as "polygon description + selection rule," and nest digits as the source of the hard problem.</div>
+    <div><span class="note">Built and signed,</span> <span class="name">Opus 5.5</span></div>
+  </div>
+</main>
+<script>
+// ---------- geometry core (from the nest page, unchanged) ----------
+const TAU = 2 * Math.PI;
+const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+const lcm = (a, b) => a / gcd(a, b) * b;
+const det3 = (a, b, c) => a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0]) + a[2] * (b[0] * c[1] - b[1] * c[0]);
+const NAMES = { 3: 'triangle', 4: 'square', 5: 'pentagon', 6: 'hexagon', 7: 'heptagon', 8: 'octagon', 9: 'nonagon', 10: 'decagon', 11: 'hendecagon', 12: 'dodecagon' };
+const nameOf = n => NAMES[n] || `${n}-gon`;
+function makeOuter(m) {
+  const d = Math.cos(Math.PI / m);
+  return { m, d, normals: Array.from({ length: m }, (_, j) => { const a = (2 * j + 1) * Math.PI / m; return [Math.cos(a), Math.sin(a), a]; }) };
+}
+function rowsAt(O, n, rot) {
+  const st = TAU / n;
+  return O.normals.map(([nx, ny, a]) => {
+    let t = (a - rot) % st; if (t < 0) t += st;
+    return [nx, ny, Math.cos(Math.min(t, st - t)), O.d];
+  });
+}
+function bestVertex(rows, W) {
+  let best = null;
+  const sub = (R, c) => [0, 1, 2].map(i => (i === c ? R[3] : R[i]));
+  for (let a = 0; a < W.length; a++) for (let b = a + 1; b < W.length; b++) for (let c = b + 1; c < W.length; c++) {
+    const A = rows[W[a]], B = rows[W[b]], C = rows[W[c]], D = det3(A, B, C);
+    if (Math.abs(D) < 1e-14) continue;
+    const x = [0, 1, 2].map(i => det3(sub(A, i), sub(B, i), sub(C, i)) / D);
+    if (W.some(j => { const R = rows[j]; return R[0] * x[0] + R[1] * x[1] + R[2] * x[2] > R[3] + 1e-12; })) continue;
+    if (!best || x[2] > best[2]) best = x;
+  }
+  return best;
+}
+function solveLP(rows, hint) {
+  const m = rows.length, W = [];
+  for (const j of [0, Math.round(m / 3) % m, Math.round(2 * m / 3) % m, ...hint]) if (!W.includes(j)) W.push(j);
+  for (let it = 0; it < 3 * m + 10; it++) {
+    const x = bestVertex(rows, W);
+    let worst = -1, wv = 1e-12;
+    for (let j = 0; j < m; j++) {
+      if (W.includes(j)) continue;
+      const R = rows[j], v = R[0] * x[0] + R[1] * x[1] + R[2] * x[2] - R[3];
+      if (v > wv) { wv = v; worst = j; }
+    }
+    if (worst < 0) return { x, tight: W.filter(j => { const R = rows[j]; return R[3] - (R[0] * x[0] + R[1] * x[1] + R[2] * x[2]) < 1e-9; }) };
+    W.push(worst);
+  }
+  throw new Error('LP did not converge');
+}
+function fitter(O, n) {
+  let hint = [];
+  return rot => { const s = solveLP(rowsAt(O, n, rot), hint); hint = s.tight; return { cx: s.x[0], cy: s.x[1], r: s.x[2], rot }; };
+}
+const TOUCH = 1e-11;
+function inspect(O, n, p) {
+  const perEdge = new Array(O.m).fill(0), touch = [], gaps = [];
+  for (let k = 0; k < n; k++) {
+    const a = p.rot + TAU * k / n, x = p.cx + p.r * Math.cos(a), y = p.cy + p.r * Math.sin(a);
+    let g = Infinity, hit = false;
+    for (let j = 0; j < O.m; j++) {
+      const s = O.d - (O.normals[j][0] * x + O.normals[j][1] * y);
+      if (s < TOUCH) { perEdge[j]++; hit = true; }
+      if (s < g) g = s;
+    }
+    gaps.push(Math.max(0, g));
+    if (hit) touch.push(k);
+  }
+  return { touch, gaps, flat: perEdge.some(c => c >= 2) };
+}
+function golden(f, lo, hi) {
+  const g = (Math.sqrt(5) - 1) / 2;
+  let a = hi - g * (hi - lo), b = lo + g * (hi - lo), fa = f(a), fb = f(b);
+  for (let i = 0; i < 45; i++) {
+    if (fa < fb) { lo = a; a = b; fa = fb; b = lo + g * (hi - lo); fb = f(b); }
+    else { hi = b; b = a; fb = fa; a = hi - g * (hi - lo); fa = f(a); }
+  }
+  return (lo + hi) / 2;
+}
+const areaRatio = (m, n, r) => n * r * r * Math.sin(TAU / n) / (m * Math.sin(TAU / m));
+function analyse(m, n, N = 90) {
+  const O = makeOuter(m), P = TAU / lcm(m, n), dt = P / N, fit = fitter(O, n), F = t => fit(t).r;
+  const raw = Array.from({ length: N }, (_, i) => F(i * dt));
+  const cands = [];
+  for (let i = 0; i < N; i++) {
+    const a = raw[(i + N - 1) % N], b = raw[i], c = raw[(i + 1) % N], lo = (i - 1) * dt, hi = (i + 1) * dt;
+    const found = [];
+    if (b >= a && b >= c) found.push(['max', golden(F, lo, hi)]);
+    if (b <= a && b <= c) found.push(['min', golden(t => -F(t), lo, hi)]);
+    for (const [kind, t] of found) {
+      const p = fit(t), tm = ((t % P) + P) % P;
+      if (cands.some(q => q.kind === kind && Math.abs(q.r - p.r) < 1e-10 && Math.min(Math.abs(q.tm - tm), P - Math.abs(q.tm - tm)) < 1e-7)) continue;
+      cands.push({ ...p, ...inspect(O, n, p), kind, tm, area: areaRatio(m, n, p.r) });
+    }
+  }
+  return { m, n, P, cands };
+}
+function choose(A, allowFlat) {
+  const bigger = (c, best) => !best || c.r > best.r + 1e-12 || (Math.abs(c.r - best.r) <= 1e-12 && c.touch.length > best.touch.length);
+  const pick = list => list.reduce((best, c) => (bigger(c, best) ? c : best), null);
+  const peaks = A.cands.filter(c => c.kind === 'max');
+  if (allowFlat) { const p = pick(peaks); return { p, status: p.flat ? 'flat' : 'locked' }; }
+  let p = pick(peaks.filter(c => !c.flat));
+  if (p) return { p, status: 'locked' };
+  p = pick(A.cands.filter(c => c.kind === 'min' && !c.flat));
+  if (p) return { p, status: 'balanced' };
+  return { p: pick(peaks), status: 'flat' };
+}
+const verts = p => Array.from({ length: p.n }, (_, k) => {
+  const a = p.rot + TAU * k / p.n;
+  return [p.cx + p.R * Math.cos(a), p.cy + p.R * Math.sin(a)];
+});
+// ---------- the nest (from the square inward) ----------
+const cache = new Map();
+function buildPolys(D) {
+  const polys = [{ n: 4, cx: 0, cy: 0, R: 1, rot: -Math.PI / 4 }];
+  for (let i = 1; i <= D; i++) {
+    const m = i + 3, n = m + 1;
+    if (!cache.has(m)) cache.set(m, analyse(m, n));
+    const { p } = choose(cache.get(m), false), P = polys[i - 1];
+    let Q = null;
+    for (let j = 0; j < m; j++) {
+      const a = P.rot + TAU * j / m, c = Math.cos(a), s = Math.sin(a);
+      const q = { n, R: P.R * p.r, rot: a + p.rot, cx: P.cx + P.R * (c * p.cx - s * p.cy), cy: P.cy + P.R * (s * p.cx + c * p.cy) };
+      const dq = Math.abs(q.cx - P.cx), dQ = Q ? Math.abs(Q.cx - P.cx) : Infinity, tol = 1e-9 * P.R;
+      if (!Q || dq < dQ - tol || (Math.abs(dq - dQ) <= tol && q.cy < Q.cy - tol)) Q = q;
+    }
+    polys.push(Q);
+  }
+  return polys;
+}
+const mod = (x, p) => ((x % p) + p) % p;
+const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,?';
+const M_MIN = 40, M_MAX = 60;          // each letter rides a secret polygon: the 40-gon .. the 60-gon
+const depthOf = m => m - 4;             // the nest's m-gon sits at depth m - 4
+const D_MAX = depthOf(M_MAX);
+const clean = text => [...text.toUpperCase()].map(ch => (ALPHA.includes(ch) ? ch : ' ')).join('');
+let POLYS = null;
+// ---------- the jump handshake ----------
+// Public: a polygon with a prime number of corners p, and a jump size g.
+// One jump moves vertex v to vertex (v * g) mod p. Secret: how many jumps.
+// Real polygon: the 2048-bit safe prime from RFC 3526 (group 14), g = 2. Its p-gon sits at nest depth p - 4.
+const P_BIG = BigInt('0xFFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B22514A08798E3404DDEF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7EDEE386BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F83655D23DCA3AD961C62F356208552BB9ED529077096966D670C354E4ABC9804F1746C08CA18217C32905E462E36CE3BE39E772C180E86039B2783A2EC07A28FB5C55DF06F4C52C9DE2BCBF6955817183995497CEA956AE515D2261898FA051015728E5A8AACAA68FFFFFFFFFFFFFFFF');
+const G_BIG = 2n;
+const TOY_P = 41, TOY_G = 6; // the 41-gon (nest depth 37): 6 visits all 40 vertices before returning
+function jump(v, g, k, p) { // v * g^k mod p, by repeated squaring
+  let r = 1n, b = BigInt(g) % BigInt(p), e = BigInt(k), P = BigInt(p);
+  while (e > 0n) { if (e & 1n) r = r * b % P; b = b * b % P; e >>= 1n; }
+  return BigInt(v) * r % P;
+}
+const bigToBytes = (x, len) => { const u = new Uint8Array(len); for (let i = len - 1; i >= 0; i--) { u[i] = Number(x & 255n); x >>= 8n; } return u; };
+const bytesToBig = u => u.reduce((a, b) => (a << 8n) | BigInt(b), 0n);
+const PLEN = 256;
+function newJumper() { // secret jump count: 256 random bits
+  const a = bytesToBig(crypto.getRandomValues(new Uint8Array(32))) | (1n << 255n);
+  return { secret: a, pub: jump(1n, G_BIG, a, P_BIG) };
+}
+function checkPub(X) { if (typeof X !== 'bigint' || X < 2n || X > P_BIG - 2n) throw new Error('That public vertex is not valid on this polygon.'); }
+
+// ---------- message keys ----------
+const TE = new TextEncoder();
+const b64 = u8 => { let s = ''; for (const b of u8) s += String.fromCharCode(b); return btoa(s); };
+const unb64 = s => Uint8Array.from(atob(s.trim()), c => c.charCodeAt(0));
+const hex = u8 => [...u8].map(b => b.toString(16).padStart(2, '0')).join('');
+const hk = (salt, info) => ({ name: 'HKDF', hash: 'SHA-256', salt, info: TE.encode(info) });
+async function fingerprint(base) {
+  const u = new Uint8Array(await crypto.subtle.deriveBits(hk(new Uint8Array(0), 'NEST6 fingerprint'), base, 64));
+  return hex(u).toUpperCase().match(/.{4}/g).join(' ');
+}
+async function msgKeys(base, nonce) {
+  const aes = await crypto.subtle.deriveKey(hk(nonce, 'NEST6 polygons and steps'), base, { name: 'AES-CTR', length: 256 }, false, ['encrypt']);
+  const mac = await crypto.subtle.deriveKey(hk(nonce, 'NEST6 seal'), base, { name: 'HMAC', hash: 'SHA-256', length: 256 }, false, ['sign', 'verify']);
+  return { aes, mac };
+}
+function reader(aes) { // uniform whole numbers below any bound, from an AES-CTR stream (rejection sampling, no bias)
+  let ctr = 0, buf = new Uint8Array(0), dv = null, pos = 0;
+  return async bound => {
+    const lim = Math.floor(2 ** 32 / bound) * bound;
+    for (;;) {
+      if (pos + 4 > buf.length) {
+        const iv = new Uint8Array(16); new DataView(iv.buffer).setUint32(8, ctr++);
+        buf = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-CTR', counter: iv, length: 32 }, aes, new Uint8Array(4096)));
+        dv = new DataView(buf.buffer); pos = 0;
+      }
+      const u = dv.getUint32(pos); pos += 4;
+      if (u < lim) return u % bound;
+    }
+  };
+}
+// Per letter, the secret stream picks WHICH polygon (40-gon .. 60-gon) and HOW MANY segments to walk on it.
+async function plan(aes, n) {
+  const draw = reader(aes), out = [];
+  for (let i = 0; i < n; i++) { const m = M_MIN + await draw(M_MAX - M_MIN + 1); out.push({ m, s: await draw(m) }); }
+  return out;
+}
+const headerOf = nonceB64 => `NEST6 nonce=${nonceB64}`;
+const bodyOf = (nonceB64, segs) => TE.encode(`${headerOf(nonceB64)}\n${segs.join(' ')}`);
+async function seal(base, text) {
+  const msg = clean(text), nonce = crypto.getRandomValues(new Uint8Array(16)), nonceB64 = b64(nonce);
+  const { aes, mac } = await msgKeys(base, nonce), pl = await plan(aes, msg.length);
+  const segs = [], trace = [];
+  let chain = 0;
+  for (let i = 0; i < msg.length; i++) {
+    const { m, s } = pl[i], p = ALPHA.indexOf(msg[i]), c = (p + s + chain) % m;
+    segs.push(c); trace.push({ m, s, c, p, ch: msg[i], chain: chain % m });
+    chain = c + p; // next start: where this letter landed, plus the letter itself
+  }
+  const tag = new Uint8Array(await crypto.subtle.sign('HMAC', mac, bodyOf(nonceB64, segs)));
+  const lines = []; for (let i = 0; i < segs.length; i += 20) lines.push(segs.slice(i, i + 20).map(v => String(v).padStart(2, '0')).join(' '));
+  return { msg, trace, wire: `${headerOf(nonceB64)}\n${lines.join('\n')}\ntag=${b64(tag)}` };
+}
+function parseWire(wire) {
+  const L = wire.split('\n').map(s => s.trim()).filter(Boolean);
+  const h = (L[0] || '').match(/^NEST6 nonce=(\S+)$/), t = (L[L.length - 1] || '').match(/^tag=(\S+)$/);
+  if (!h || !t) throw new Error('Not a NEST6 message (needs the header line, the vertex numbers, and the tag line).');
+  const segs = L.slice(1, -1).join(' ').split(/\s+/).filter(Boolean).map(Number);
+  if (segs.some(v => !Number.isInteger(v) || v < 0 || v >= M_MAX)) throw new Error(`Every vertex number must be a whole number from 0 to ${M_MAX - 1}.`);
+  return { nonceB64: h[1], segs, tagB64: t[1] };
+}
+async function open(base, wire) {
+  const { nonceB64, segs, tagB64 } = parseWire(wire);
+  const { aes, mac } = await msgKeys(base, unb64(nonceB64));
+  const ok = await crypto.subtle.verify('HMAC', mac, unb64(tagB64), bodyOf(nonceB64, segs));
+  if (!ok) return { ok: false, segs };
+  const pl = await plan(aes, segs.length), trace = [];
+  let chain = 0;
+  for (let i = 0; i < segs.length; i++) {
+    const { m, s } = pl[i], c = segs[i], p = mod(c - s - chain, m);
+    trace.push({ m, s, c, p, ch: ALPHA[p] ?? '·', chain: chain % m });
+    chain = c + p;
+  }
+  return { ok: true, segs, trace, msg: trace.map(t => t.ch).join('') };
+}
+// ---------- the lattice handshake (Frodo-style LWE, modulus 2^15: no prime anywhere) ----------
+// Nest digits: the square's share left inside the nest's 60-gon (depth 56), computed exactly from the
+// closed-form step ratios to 1024 decimal places. They seed the public grid A together with a fresh random seed.
+const NEST_DIGITS = '0.1712639484794083441108615054847902761061924213864321620100620256578792233644436399182516016958904978896074351432636090944505666529147465464088331845062800500354968598109726817352441214373963747772201010145719266284160303193778696659562786627766718575001390056150914474923644781311186069437829615642311675375113522952339506842125392254252103210857903258511328359754985710513570881405500670565386444980695193386068441526331437195213508972052770405874057604563370575518564409370663007134479144297171592065150446196681431738160543790872948740047997823594770560057691670828817345112916224885065761775358885249634114007438189988541018620108140331365579863505784803632274871139710208226442668203998177002226785859988718909701968235532761869597302709846666840003660861469858811582907645398040516338113866254611501901283637799039668823738819171440096184205705277725096254678315019357666454692546638562461140456744369788710249967935797303838652429741048025014112273020308956777716735984272081515182006088108994784580944424829827666301';
+const LN = 640, LNB = 8, LQ = 1 << 15, LMASK = LQ - 1, LBITS = 2; // FrodoKEM-640 sizes: n = 640, n-bar = 8, q = 2^15, 2 bits per entry
+const CDF = [4643, 13363, 20579, 25843, 29227, 31145, 32103, 32525, 32689, 32745, 32762, 32766, 32767];
+const sha256 = async u8 => new Uint8Array(await crypto.subtle.digest('SHA-256', u8));
+const cat = (...xs) => { const n = xs.reduce((s, x) => s + x.length, 0), o = new Uint8Array(n); let p = 0; for (const x of xs) { o.set(x, p); p += x.length; } return o; };
+function rand(n) { const o = new Uint8Array(n); for (let i = 0; i < n; i += 65536) crypto.getRandomValues(o.subarray(i, Math.min(n, i + 65536))); return o; }
+
+async function genA(seedA) { // 640 x 640 grid of 15-bit numbers from AES-256-CTR, keyed by the nest digits + the seed
+  const k = await sha256(cat(TE.encode('NEST6 grid|' + NEST_DIGITS + '|'), seedA));
+  const key = await crypto.subtle.importKey('raw', k, 'AES-CTR', false, ['encrypt']);
+  const ks = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-CTR', counter: new Uint8Array(16), length: 64 }, key, new Uint8Array(2 * LN * LN)));
+  const A = new Uint16Array(LN * LN);
+  for (let i = 0; i < A.length; i++) A[i] = ((ks[2 * i] << 8) | ks[2 * i + 1]) & LMASK;
+  return A;
+}
+function noise(count) { // small errors, mostly -3..3, never beyond +-12
+  const r = rand(2 * count), out = new Int32Array(count);
+  for (let i = 0; i < count; i++) {
+    const v = (r[2 * i] << 8) | r[2 * i + 1], t = v >> 1;
+    let e = 0; for (let j = 0; j < CDF.length - 1; j++) e += t > CDF[j] ? 1 : 0;
+    out[i] = v & 1 ? -e : e;
+  }
+  return out;
+}
+const packM = M => { const u = new Uint8Array(2 * M.length); for (let i = 0; i < M.length; i++) { u[2 * i] = M[i] >> 8; u[2 * i + 1] = M[i] & 255; } return u; };
+
+// Alice: B = A S + E   (640 x 8)
+async function latticeKeygen() {
+  const seedA = rand(16), A = await genA(seedA), S = noise(LN * LNB), E = noise(LN * LNB), B = new Uint16Array(LN * LNB);
+  for (let i = 0; i < LN; i++) {
+    const acc = new Int32Array(LNB);
+    for (let k = 0; k < LN; k++) { const a = A[i * LN + k]; for (let j = 0; j < LNB; j++) acc[j] += a * S[k * LNB + j]; }
+    for (let j = 0; j < LNB; j++) B[i * LNB + j] = (acc[j] + E[i * LNB + j]) & LMASK;
+  }
+  return { seedA, B, S };
+}
+// Bob: B' = S' A + E' (8 x 640),  V = S' B + E'' (8 x 8),  C = V + key bits placed on the square's corners
+async function latticeEncaps(seedA, B) {
+  const A = await genA(seedA), Sp = noise(LNB * LN), Ep = noise(LNB * LN), Epp = noise(LNB * LNB);
+  const acc = new Int32Array(LNB * LN);
+  for (let i = 0; i < LNB; i++) for (let k = 0; k < LN; k++) {
+    const s = Sp[i * LN + k]; if (!s) continue;
+    const row = k * LN, o = i * LN; for (let j = 0; j < LN; j++) acc[o + j] += s * A[row + j];
+  }
+  const Bp = new Uint16Array(LNB * LN); for (let i = 0; i < Bp.length; i++) Bp[i] = (acc[i] + Ep[i]) & LMASK;
+  const mu = rand(16), bits = []; for (const b of mu) for (let s = 6; s >= 0; s -= 2) bits.push((b >> s) & 3);
+  const C = new Uint16Array(LNB * LNB);
+  for (let i = 0; i < LNB; i++) for (let j = 0; j < LNB; j++) {
+    let v = 0; for (let k = 0; k < LN; k++) v += Sp[i * LN + k] * B[k * LNB + j];
+    C[i * LNB + j] = (v + Epp[i * LNB + j] + bits[i * LNB + j] * (LQ >> LBITS)) & LMASK;
+  }
+  return { Bp, C, mu, bits };
+}
+// Alice: M = C - B' S, then round each entry to the nearest corner of the square
+function latticeDecaps(S, Bp, C) {
+  const M = new Uint16Array(LNB * LNB), bits = [];
+  for (let i = 0; i < LNB; i++) for (let j = 0; j < LNB; j++) {
+    let v = 0; for (let k = 0; k < LN; k++) v += Bp[i * LN + k] * S[k * LNB + j];
+    M[i * LNB + j] = (C[i * LNB + j] - v) & LMASK;
+  }
+  for (let i = 0; i < M.length; i++) bits.push(((M[i] + (LQ >> (LBITS + 1))) >> (15 - LBITS)) & 3);
+  const mu = new Uint8Array(16); bits.forEach((b, i) => { mu[i >> 2] |= b << (6 - 2 * (i & 3)); });
+  return { M, bits, mu };
+}
+
+// ---------- hybrid: jump secret + lattice secret, bound to everything that was sent ----------
+async function hybridBase(jumpS, mu, transcript) {
+  const salt = await sha256(transcript), ikm = cat(bigToBytes(jumpS, PLEN), mu);
+  const prk = await crypto.subtle.importKey('raw', ikm, 'HKDF', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt, info: TE.encode('NEST6 hybrid') }, prk, 256);
+  return crypto.subtle.importKey('raw', bits, 'HKDF', false, ['deriveKey', 'deriveBits']);
+}
+const transcriptOf = (Apub, Bpub, seedA, B, Bp, C) => cat(TE.encode('NEST6'), bigToBytes(Apub, PLEN), bigToBytes(Bpub, PLEN), seedA, packM(B), packM(Bp), packM(C));
+// ---------- page ----------
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[<&>"]/g, c => `&#${c.charCodeAt(0)};`);
+const sh = c => (c === ' ' ? '␣' : c);
+const ease = x => (x < 0.5 ? 2 * x * x : 1 - (-2 * x + 2) ** 2 / 2);
+const PT = ([x, y]) => `${x.toFixed(5)},${(-y).toFixed(5)}`;
+const shortBig = x => { const s = x.toString(); return s.length <= 40 ? s : `${s.slice(0, 18)}…${s.slice(-18)} <span class="note">(${s.length} digits)</span>`; };
+const shortHex = u8 => { const h = hex(u8); return h.length <= 40 ? h : `${h.slice(0, 20)}…${h.slice(-12)}`; };
+let abBase = null, baBase = null;
+
+// ---------- 1. toy jump handshake on the 41-gon ----------
+let toy = null, tRaf = 0;
+const randIn = (lo, hi) => lo + crypto.getRandomValues(new Uint32Array(1))[0] % (hi - lo + 1);
+function newToy() {
+  let a, b, A, B, S;
+  do { a = randIn(2, 39); b = randIn(2, 39); A = Number(jump(1, TOY_G, a, TOY_P)); B = Number(jump(1, TOY_G, b, TOY_P)); S = Number(jump(1, B, a, TOY_P)); }
+  while ([A, B, S].some(v => v === 1 || v === TOY_P - 1) || A === B || S === A || S === B);
+  const path = (g, k) => { const out = [1]; for (let i = 0; i < k; i++) out.push(out[out.length - 1] * g % TOY_P); return out; };
+  toy = { a, b, A, B, S, phases: [
+    { who: 'A', path: path(TOY_G, a), say: `<span class="cA">Alice</span>, round 1: from vertex 1, ${a} jumps of size ${TOY_G}. She lands on <b class="cA">${A}</b>.` },
+    { who: 'B', path: path(TOY_G, b), say: `<span class="cB">Bob</span>, round 1: from vertex 1, ${b} jumps of size ${TOY_G}. He lands on <b class="cB">${B}</b>.` },
+    { who: 'X', path: [], say: `They swap landing vertices in public: <span class="cA">A = ${A}</span>, <span class="cB">B = ${B}</span>. Eve sees both.` },
+    { who: 'A', path: path(B, a), say: `<span class="cA">Alice</span>, round 2: the same ${a} jumps, but now each jump is ×${B}, Bob's vertex. She lands on <b class="cR">${S}</b>.` },
+    { who: 'B', path: path(A, b), say: `<span class="cB">Bob</span>, round 2: the same ${b} jumps, but each is ×${A}, Alice's vertex. He lands on <b class="cR">${S}</b>.` },
+    { who: 'S', path: [], say: `<span class="cR">Both land on vertex ${S}.</span> Eve never saw ${a} or ${b}, and without one of them she can't make the round-2 walk.` },
+  ] };
+  $('tRows').innerHTML = [
+    ['Polygon', '41-gon, g = 6', '41-gon, g = 6', 'yes'],
+    ['Secret jump count', `<b>${a}</b>`, `<b>${b}</b>`, 'no'],
+    ['Round 1 landing', `<b class="cA">${A}</b>`, `<b class="cB">${B}</b>`, 'yes'],
+    ['Round 2 jump size', `×${B}`, `×${A}`, 'yes'],
+    ['Shared vertex', `<b class="cR">${S}</b>`, `<b class="cR">${S}</b>`, '<b>no</b>'],
+  ].map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('');
+  $('tEve').innerHTML = `On this little polygon Eve can cheat: jump from 1 by 6 until she hits ${A}, at most 40 tries. The real handshake uses a polygon with a 617-digit number of corners.`;
+  $('tPhase').innerHTML = 'Press ▶ to watch.';
+  cancelAnimationFrame(tRaf); drawToy(-1, 0);
+}
+function drawToy(ph, u) {
+  const Q = POLYS[depthOf(TOY_P)], V = verts(Q), h = Q.R * 1.42, svg = $('tSvg');
+  svg.setAttribute('viewBox', [Q.cx - h, -Q.cy - h, 2 * h, 2 * h].map(v => v.toFixed(5)).join(' '));
+  let s = `<polygon points="${V.map(PT).join(' ')}" class="live" vector-effect="non-scaling-stroke"/>`;
+  const last = {};
+  for (let i = 0; i < toy.phases.length && i <= ph; i++) {
+    const P = toy.phases[i]; if (!P.path.length) continue;
+    const n = P.path.length - 1, upto = i < ph ? n : Math.floor(u * n + 1e-9), frac = i < ph ? 0 : u * n - upto;
+    const old = (i < 3 && ph >= 3) ? ' old' : '';
+    for (let k = 0; k < Math.min(upto, n); k++) s += `<line x1="${V[P.path[k]][0]}" y1="${-V[P.path[k]][1]}" x2="${V[P.path[k + 1]][0]}" y2="${-V[P.path[k + 1]][1]}" class="ch${P.who}${old}" vector-effect="non-scaling-stroke"/>`;
+    if (upto < n && i === ph) { const a = V[P.path[upto]], b = V[P.path[upto + 1]]; s += `<line x1="${a[0]}" y1="${-a[1]}" x2="${a[0] + (b[0] - a[0]) * frac}" y2="${-(a[1] + (b[1] - a[1]) * frac)}" class="ch${P.who}" vector-effect="non-scaling-stroke"/>`; }
+    last[P.who] = P.path[Math.min(upto, n)];
+  }
+  for (const v of V) s += `<circle cx="${v[0]}" cy="${-v[1]}" r="${(Q.R * 0.012).toFixed(5)}" class="vx"/>`;
+  s += '<g class="tring">';
+  for (let k = 0; k < TOY_P; k++) {
+    const x = Q.cx + (V[k][0] - Q.cx) * 1.13, y = Q.cy + (V[k][1] - Q.cy) * 1.13;
+    let cls = '';
+    if (ph >= 1 && k === toy.A) cls = 'a'; if (ph >= 2 && k === toy.B) cls = 'b';
+    if (ph >= 4 && k === toy.S) cls = 's';
+    s += `<text x="${x.toFixed(5)}" y="${(-y).toFixed(5)}" font-size="${(Q.R * 0.07).toFixed(5)}" class="${cls}"${k === 0 ? ' opacity="0.35"' : ''}>${k}</text>`;
+  }
+  s += '</g>';
+  for (const w of ['A', 'B']) if (last[w] != null) { const v = V[last[w]]; s += `<circle cx="${v[0]}" cy="${-v[1]}" r="${(Q.R * 0.03).toFixed(5)}" fill="var(--${w === 'A' ? 'gap' : 'tri'})"/>`; }
+  if (ph >= 5) { const v = V[toy.S]; s += `<circle cx="${v[0]}" cy="${-v[1]}" r="${(Q.R * 0.055).toFixed(5)}" class="start" vector-effect="non-scaling-stroke"/>`; }
+  const one = V[1]; s += `<circle cx="${one[0]}" cy="${-one[1]}" r="${(Q.R * 0.025).toFixed(5)}" fill="none" stroke="var(--ink)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>`;
+  svg.innerHTML = s;
+}
+function playToy() {
+  cancelAnimationFrame(tRaf);
+  let ph = 0, t = 0, last = performance.now();
+  const dur = P => (P.path.length ? Math.max(1200, (P.path.length - 1) * 260) : 1800);
+  const tick = now => {
+    t += (now - last) * +$('tSpeed').value; last = now;
+    const P = toy.phases[ph], u = Math.min(1, t / dur(P));
+    $('tPhase').innerHTML = P.say; drawToy(ph, u);
+    if (u >= 1) { ph++; t = 0; if (ph >= toy.phases.length) { drawToy(5, 1); return; } }
+    tRaf = requestAnimationFrame(tick);
+  };
+  tRaf = requestAnimationFrame(tick);
+}
+$('tPlay').onclick = playToy;
+$('tNew').onclick = () => { newToy(); playToy(); };
+
+// ---------- 2a. a 2-D lattice, built from nest vertices ----------
+function drawLattice2D() {
+  const P5 = POLYS[1], V5 = verts(P5); // two neighbouring pentagon vertices, 72 degrees apart
+  const b1 = [(V5[0][0] - P5.cx) * 0.24, (V5[0][1] - P5.cy) * 0.24], b2 = [(V5[1][0] - P5.cx) * 0.2, (V5[1][1] - P5.cy) * 0.2];
+  const pts = [];
+  for (let i = -14; i <= 14; i++) for (let j = -14; j <= 14; j++) {
+    const x = i * b1[0] + j * b2[0], y = i * b1[1] + j * b2[1];
+    if (Math.abs(x) < 1.05 && Math.abs(y) < 1.05) pts.push([x, y, i, j]);
+  }
+  const inner = pts.filter(p => Math.abs(p[0]) < 0.6 && Math.abs(p[1]) < 0.6), H = inner[randIn(0, inner.length - 1)];
+  const r = 0.03 + Math.random() * 0.05, th = Math.random() * TAU, T = [H[0] + r * Math.cos(th), H[1] + r * Math.sin(th)];
+  let s = '';
+  for (const p of pts) s += `<circle cx="${p[0].toFixed(4)}" cy="${(-p[1]).toFixed(4)}" r="0.013" class="lpt"/>`;
+  s += `<line x1="0" y1="0" x2="${b1[0]}" y2="${-b1[1]}" class="lbasis" vector-effect="non-scaling-stroke"/><line x1="0" y1="0" x2="${b2[0]}" y2="${-b2[1]}" class="lbasis" vector-effect="non-scaling-stroke"/>`;
+  s += `<circle cx="${H[0]}" cy="${-H[1]}" r="0.028" class="lhid"/><circle cx="${T[0]}" cy="${-T[1]}" r="0.022" class="ltgt"/>`;
+  s += `<line x1="${H[0]}" y1="${-H[1]}" x2="${T[0]}" y2="${-T[1]}" stroke="var(--hi)" stroke-width="1" stroke-dasharray="2 2" vector-effect="non-scaling-stroke"/>`;
+  const svg = $('lSvg'); svg.setAttribute('viewBox', '-1 -1 2 2'); svg.innerHTML = s;
+}
+$('lNew').onclick = drawLattice2D;
+
+// ---------- 2b. the nest digits, checked against the optimizer ----------
+function showDigits() {
+  const d = NEST_DIGITS;
+  $('digits').innerHTML = `${d.slice(0, 2)}<b>${d.slice(2, 13)}</b>${d.slice(13, 112)}… <span class="note">(${d.length - 2} digits)</span>`;
+  let A = 1; for (let m = 4; m < 60; m++) A *= choose(cache.get(m), false).p.area;
+  const live = A.toFixed(16); let k = 2; while (k < live.length && live[k] === d[k]) k++;
+  $('digitCheck').innerHTML = `Check: this page's own polygon optimizer, which knows nothing about the formulas, gets <span class="mono">${live}</span>. It agrees with the exact digits to <b>${k - 2} decimal places</b>, about as far as an optimizer working in ordinary 16-digit arithmetic can reach after 56 steps.`;
+}
+
+// ---------- 2c. the 64 dials ----------
+function drawDials(M, bits) {
+  let html = '', worst = 0;
+  for (let i = 0; i < 64; i++) {
+    let d = (M[i] - bits[i] * (LQ >> 2)) & LMASK; if (d > LQ / 2) d -= LQ; worst = Math.max(worst, Math.abs(d));
+    const ang = M[i] / LQ * TAU, c = k => [Math.cos(k * Math.PI / 2), Math.sin(k * Math.PI / 2)];
+    let s = `<polygon points="${[0, 1, 2, 3].map(k => PT(c(k))).join(' ')}" fill="none" stroke="var(--rule)" stroke-width="0.05"/>`;
+    for (let k = 0; k < 4; k++) { const a = (k + 0.5) * Math.PI / 2; s += `<line x1="0" y1="0" x2="${Math.cos(a).toFixed(3)}" y2="${(-Math.sin(a)).toFixed(3)}" stroke="var(--grid)" stroke-width="0.04" stroke-dasharray="0.08 0.08"/>`; }
+    const tg = c(bits[i]); s += `<circle cx="${tg[0]}" cy="${-tg[1]}" r="0.22" fill="none" stroke="var(--core)" stroke-width="0.09"/>`;
+    s += `<circle cx="${Math.cos(ang).toFixed(4)}" cy="${(-Math.sin(ang)).toFixed(4)}" r="0.12" fill="var(--hi)"/>`;
+    html += `<svg viewBox="-1.35 -1.35 2.7 2.7" role="img" aria-label="dial ${i}: piece ${bits[i]}">${s}</svg>`;
+  }
+  $('dials').innerHTML = html;
+  const deg = worst / LQ * 360;
+  $('dialNote').innerHTML = `Largest nudge this session: <b>${worst}</b> of 32,768 positions (${deg.toFixed(1)}°). Alice reads a piece wrongly only if a nudge passes 4,096 positions (45°)${worst < LQ / 8 ? ', so every dot here rounds to its ring' : ': <b class="bad">at least one piece was misread this time</b>'}. Without Alice's secret <i>S</i>, Eve's dots would land anywhere on the dial.`;
+}
+
+// ---------- 3. the hybrid handshake ----------
+async function makeKeys() {
+  const t0 = performance.now();
+  const alice = newJumper(), bob = newJumper();
+  const kp = await latticeKeygen();                       // Alice
+  const t1 = performance.now();
+  const en = await latticeEncaps(kp.seedA, kp.B);         // Bob
+  const t2 = performance.now();
+  const de = latticeDecaps(kp.S, en.Bp, en.C);            // Alice
+  checkPub(alice.pub); checkPub(bob.pub);
+  const sa = jump(1n, bob.pub, alice.secret, P_BIG), sb = jump(1n, alice.pub, bob.secret, P_BIG);
+  const tr = transcriptOf(alice.pub, bob.pub, kp.seedA, kp.B, en.Bp, en.C);
+  abBase = await hybridBase(sa, de.mu, tr); baBase = await hybridBase(sb, en.mu, tr);
+  const f1 = await fingerprint(abBase), f2 = await fingerprint(baBase), ms = performance.now() - t0;
+  const pub = '<span class="tag pub">everyone</span>', sec = n => `<span class="tag sec">${n} only</span>`, both = '<span class="tag sec">Alice + Bob</span>';
+  const muOk = hex(de.mu) === hex(en.mu);
+  const kb = x => `${(x / 1024).toFixed(1)} KB`;
+  $('hsRows').innerHTML = [
+    ['<td colspan="3">Jump handshake</td>'],
+    ['Polygon: corners <i>p</i>', shortBig(P_BIG), pub],
+    ['<span class="cA">Alice\'s</span> jump count <i>a</i>', shortBig(alice.secret), sec('Alice')],
+    ['<span class="cB">Bob\'s</span> jump count <i>b</i>', shortBig(bob.secret), sec('Bob')],
+    ['<span class="cA">A</span> = 2 jumped <i>a</i> times', shortBig(alice.pub), pub],
+    ['<span class="cB">B</span> = 2 jumped <i>b</i> times', shortBig(bob.pub), pub],
+    ['Jump secret (both compute)', `${shortBig(sa)} ${sa === sb ? '<span class="ok">match</span>' : '<span class="bad">MISMATCH</span>'}`, both],
+    ['<td colspan="3">Lattice handshake</td>'],
+    ['Grid seed (fresh)', hex(kp.seedA), pub],
+    ['Grid A', `640 × 640 = 409,600 numbers, regenerated by each side from nest digits + seed`, pub],
+    ['<span class="cA">Alice\'s</span> secret <i>S</i>', '640 × 8 small numbers', sec('Alice')],
+    ['<span class="cA">Alice</span> sends B = A·S + E', `640 × 8 numbers (${kb(LN * LNB * 15 / 8)})`, pub],
+    ['<span class="cB">Bob\'s</span> secret <i>S′</i>', '8 × 640 small numbers', sec('Bob')],
+    ['<span class="cB">Bob</span> sends B′ and C', `8 × 640 + 8 × 8 numbers (${kb((LNB * LN + 64) * 15 / 8)})`, pub],
+    ['Lattice secret (128 bits)', `${hex(de.mu)} ${muOk ? '<span class="ok">match</span>' : '<span class="bad">MISMATCH</span>'}`, both],
+    ['<td colspan="3">Combined</td>'],
+    ['Hybrid key → safety number', `<b class="mono">${f1 === f2 ? f1 : 'MISMATCH'}</b> <span class="note">(read it aloud: if both sides match, no one is in the middle)</span>`, both],
+  ].map(r => r.length === 1 ? `<tr class="grp">${r[0]}</tr>` : `<tr><td>${r[0]}</td><td class="big">${r[1]}</td><td>${r[2]}</td></tr>`).join('');
+  $('hsSt').textContent = `Done in ${ms.toFixed(0)} ms (Alice's lattice key ${(t1 - t0).toFixed(0)} ms, Bob's reply ${(t2 - t1).toFixed(0)} ms).`;
+  drawDials(de.M, en.bits);
+}
+$('newkeys').onclick = async () => { $('hsSt').textContent = 'Working…'; await makeKeys(); await encrypt(); };
+
+// ---------- 5. seal ----------
+async function encrypt() {
+  stop();
+  const s = await seal(abBase, $('msg').value);
+  $('msg').value = s.msg; $('wire').value = s.wire; $('eveSt').textContent = '';
+  const ms = [...new Set(s.trace.map(t => t.m))].length;
+  $('encSt').innerHTML = `<span class="ok">Sealed ${s.msg.length} letters</span> on ${ms} different secret polygons.`;
+  resetView();
+}
+$('enc').onclick = encrypt;
+$('eve').onclick = () => {
+  const L = $('wire').value.split('\n'); if (L.length < 3) return;
+  const parts = L[1].split(' '); if (!parts.length) return;
+  parts[0] = String((+parts[0] + 1) % M_MIN).padStart(2, '0'); L[1] = parts.join(' '); $('wire').value = L.join('\n');
+  $('eveSt').innerHTML = 'The first letter now lands one vertex over, which still looks perfectly valid. Press <b>Decrypt and animate</b>.';
+};
+
+// ---------- 6. decrypt animation ----------
+let anim = null, raf = 0, paused = false, last = 0;
+const FULL = [-1.08, -1.08, 2.16, 2.16];
+const SEG_MS = 65, PH = ['hop', 'show', 'steps', 'chain', 'land'];
+function zoomView(Q) { const h = Q.R * 1.5; return [Q.cx - h, -Q.cy - h, 2 * h, 2 * h]; }
+const lerpV = (a, b, u) => a.map((v, k) => v + (b[k] - v) * u);
+const phaseDur = (s, name) => ({ hop: 700, show: 700, steps: Math.max(450, s.s * SEG_MS), chain: Math.max(450, s.chain * SEG_MS), land: 750 }[name]);
+function resetView() {
+  stop(); $('out').innerHTML = ''; $('phase').textContent = 'Press ▶ to watch Bob hop from polygon to polygon.'; $('eq').innerHTML = ''; $('segs').innerHTML = '';
+  drawScene({ view: FULL, built: D_MAX + 1 });
+}
+function stop() { cancelAnimationFrame(raf); anim = null; paused = false; $('pause').textContent = '❚❚ Pause'; }
+async function start() {
+  stop();
+  let r;
+  try { r = await open(baBase, $('wire').value); } catch (e) { $('phase').innerHTML = `<span class="bad">${esc(e.message)}</span>`; return; }
+  $('out').innerHTML = '';
+  $('segs').innerHTML = r.segs.map((v, i) => `<span id="sg${i}">${String(v).padStart(2, '0')}</span>`).join(' ');
+  if (!r.ok) {
+    $('phase').innerHTML = '<span class="bad">Seal broken. Bob refuses to decrypt.</span> A landing vertex or the nonce was changed, or the message was sealed with a different key. Not one letter, and not one polygon choice, is revealed.';
+    $('eq').innerHTML = '<div><span>Seal check (HMAC-SHA-256)</span><span class="cR">FAILED</span></div>';
+    drawScene({ view: FULL, built: D_MAX + 1, broken: true }); return;
+  }
+  anim = { r, i: 0, ph: $('intro').checked ? -2 : 0, t: 0, out: '', view: FULL };
+  $('phase').innerHTML = '<span class="ok">Seal verified.</span> Descending into the nest…';
+  last = performance.now(); raf = requestAnimationFrame(tick);
+}
+function tick(now) {
+  if (!anim) return;
+  const dt = (now - last) * +$('speed').value; last = now;
+  if (!paused) anim.t += dt;
+  const a = anim, tr = a.r.trace;
+  if (a.ph === -2) {
+    const u = Math.min(1, a.t / 2200), k = Math.ceil(u * D_MAX);
+    drawScene({ view: FULL, built: k + 1, hiDepth: k });
+    if (u >= 1) { a.ph = 0; a.t = 0; }
+  } else {
+    const s = tr[a.i], name = PH[a.ph], u = Math.min(1, a.t / phaseDur(s, name));
+    showLetter(a.i, name, name === 'steps' || name === 'chain' ? u : ease(u));
+    if (u >= 1) {
+      a.t = 0; a.ph++;
+      if (a.ph === PH.length) {
+        a.view = zoomView(POLYS[depthOf(s.m)]);
+        a.out += s.ch; a.ph = 0; a.i++;
+        if (a.stepOnce) { paused = true; a.stepOnce = false; }
+        if (a.i >= tr.length) { done(); return; }
+      }
+    }
+  }
+  raf = requestAnimationFrame(tick);
+}
+function done() {
+  const n = anim.r.trace.length, ms = [...new Set(anim.r.trace.map(t => t.m))].length;
+  showLetter(n - 1, 'land', 1, true);
+  $('out').textContent = anim.out;
+  $('phase').innerHTML = `<span class="ok">Done.</span> ${n} letters, ${ms} different polygons: “${esc(anim.out)}”.`;
+  anim = null;
+}
+function posAt(Q, f) {
+  const m = Q.n, j0 = Math.floor(f), u = f - j0, V = verts(Q), a = V[mod(j0, m)], b = V[mod(j0 + 1, m)];
+  return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u];
+}
+function walkPath(Q, f0, f1) {
+  const pts = [posAt(Q, f0)];
+  for (let j = Math.floor(f0 - 1e-9); j > f1; j--) pts.push(posAt(Q, j));
+  pts.push(posAt(Q, f1));
+  return 'M' + pts.map(PT).join('L');
+}
+function showLetter(i, name, u, final) {
+  const s = anim.r.trace[i], Q = POLYS[depthOf(s.m)];
+  const afterS = s.c - s.s, afterC = afterS - s.chain;
+  let f = s.c, pS = null, pC = null, view = zoomView(Q);
+  if (name === 'hop') view = lerpV(anim.view, zoomView(Q), u);
+  if (name === 'steps') { f = s.c - s.s * u; pS = [s.c, f]; }
+  if (name === 'chain') { pS = [s.c, afterS]; f = afterS - s.chain * u; pC = [afterS, f]; }
+  if (name === 'land') { pS = [s.c, afterS]; pC = [afterS, afterC]; f = afterC; }
+  const landed = name === 'land', prevM = i > 0 ? anim.r.trace[i - 1].m : null;
+  drawScene({ view, built: D_MAX + 1, Q, ghost: prevM && prevM !== s.m ? POLYS[depthOf(prevM)] : null, f, pS, pC, from: s.c, mark: landed ? s.p : null, dim: name === 'hop' ? 1 - u : 0 });
+  $('out').innerHTML = final ? esc(anim.out + s.ch) : esc(anim.out) + (landed ? `<span class="cur">${esc(s.ch)}</span>` : '');
+  const prev = i > 0 ? anim.r.trace[i - 1] : null, walked = name === 'steps' ? Math.floor(s.s * u) : name === 'chain' ? Math.floor(s.chain * u) : null;
+  $('phase').innerHTML = {
+    hop: `Letter ${i}: the secret stream says this letter rides the <b class="cV">${nameOf(s.m)}</b> (nest depth ${depthOf(s.m)})${prev ? (prev.m === s.m ? ', the same as the last one' : `, not the ${nameOf(prev.m)}`) : ''}.`,
+    show: `Start on landing vertex <b class="cR">${s.c}</b>, the number Eve sees. On its own it's meaningless: she doesn't know which polygon it sits on.`,
+    steps: `Walking back <span class="cS">${s.s}</span> secret segments around the ${nameOf(s.m)}… ${walked}`,
+    chain: i ? `Walking back <span class="cC">${s.chain}</span> chain segments, from letter ${i - 1}: (${prev.c} + ${prev.p}) wrapped on ${s.m} sides… ${walked}` : 'The first letter has no previous letter, so its chain is 0.',
+    land: `Landed on vertex <b class="cR">${s.p}</b> = “${esc(sh(s.ch))}”.`,
+  }[name];
+  $('eqTitle').textContent = `The walk for letter ${i}`;
+  $('eq').innerHTML =
+    `<div><span>Secret polygon</span><span class="cV">${nameOf(s.m)}</span></div>` +
+    `<div><span>Landing vertex <i>L</i> (public)</span><span class="cR">${s.c}</span></div>` +
+    `<div><span>− <span class="cS">secret steps</span></span><span class="cS">${s.s}</span></div>` +
+    `<div><span>− <span class="cC">chain</span>${i ? ` = (${prev.c} + ${prev.p}) mod ${s.m}` : ''}</span><span class="cC">${s.chain}</span></div>` +
+    `<div class="tot"><span>= (${s.c} − ${s.s} − ${s.chain}) mod ${s.m}</span><span>vertex ${s.p} → “${esc(sh(s.ch))}”</span></div>`;
+  document.querySelectorAll('.segs .cur').forEach(e => e.classList.remove('cur'));
+  const w = $('sg' + i); if (w) { w.classList.add('cur'); w.scrollIntoView({ block: 'nearest' }); }
+}
+function drawScene(o) {
+  const svg = $('svg');
+  svg.setAttribute('viewBox', o.view.map(v => v.toFixed(5)).join(' '));
+  let s = `<polygon points="${verts(POLYS[0]).map(PT).join(' ')}" class="sq" vector-effect="non-scaling-stroke"/>`, d = '';
+  for (let j = 1; j < Math.min(o.built, POLYS.length); j++) d += 'M' + verts(POLYS[j]).map(PT).join('L') + 'Z';
+  s += `<path d="${d}" class="bg" vector-effect="non-scaling-stroke"/>`;
+  if (o.hiDepth) s += `<polygon points="${verts(POLYS[o.hiDepth]).map(PT).join(' ')}" class="live" vector-effect="non-scaling-stroke"/>`;
+  if (o.ghost && o.dim > 0) s += `<polygon points="${verts(o.ghost).map(PT).join(' ')}" class="ghost" opacity="${o.dim.toFixed(2)}" vector-effect="non-scaling-stroke"/>`;
+  if (o.Q) {
+    const Q = o.Q, m = Q.n, V = verts(Q), fs = Q.R * 0.068;
+    s += `<polygon points="${V.map(PT).join(' ')}" class="live" vector-effect="non-scaling-stroke"/>`;
+    for (const v of V) s += `<circle cx="${v[0]}" cy="${-v[1]}" r="${(Q.R * 0.012).toFixed(5)}" class="vx"/>`;
+    s += '<g class="ring">';
+    for (let j = 0; j < m; j++) {
+      const x = Q.cx + (V[j][0] - Q.cx) * 1.13, y = Q.cy + (V[j][1] - Q.cy) * 1.13, lab = j < ALPHA.length ? sh(ALPHA[j]) : '·';
+      s += `<text x="${x.toFixed(5)}" y="${(-y).toFixed(5)}" font-size="${fs.toFixed(5)}" class="${j === o.mark ? 'on' : j === o.from ? 'from' : j >= ALPHA.length ? 'off' : ''}">${esc(lab)}</text>`;
+    }
+    s += '</g>';
+    if (o.pS) s += `<path d="${walkPath(Q, o.pS[0], o.pS[1])}" class="walkS" vector-effect="non-scaling-stroke"/>`;
+    if (o.pC) s += `<path d="${walkPath(Q, o.pC[0], o.pC[1])}" class="walkC" vector-effect="non-scaling-stroke"/>`;
+    const st = V[o.from]; s += `<circle cx="${st[0]}" cy="${-st[1]}" r="${(Q.R * 0.04).toFixed(5)}" class="start" vector-effect="non-scaling-stroke"/>`;
+    const [px, py] = posAt(Q, o.f); s += `<circle cx="${px}" cy="${-py}" r="${(Q.R * 0.03).toFixed(5)}" class="dot"/>`;
+    s += `<text x="${Q.cx}" y="${-Q.cy}" font-size="${(Q.R * 0.16).toFixed(5)}" text-anchor="middle" dominant-baseline="central" fill="var(--vio)" font-weight="700" opacity="0.8">${m}-gon</text>`;
+  }
+  if (o.broken) s += `<text x="0" y="0" font-size="0.12" text-anchor="middle" dominant-baseline="central" fill="var(--hi)" font-weight="700">SEAL BROKEN</text>`;
+  svg.innerHTML = s;
+}
+$('play').onclick = start;
+$('pause').onclick = () => { if (anim) { paused = !paused; $('pause').textContent = paused ? '▶ Resume' : '❚❚ Pause'; } };
+$('step').onclick = async () => {
+  if (!anim) { $('intro').checked = false; await start(); if (!anim) return; }
+  anim.stepOnce = true; paused = false; $('pause').textContent = '❚❚ Pause';
+};
+
+$('tPhase').textContent = 'Building the nest…';
+setTimeout(async () => { POLYS = buildPolys(D_MAX); newToy(); drawLattice2D(); showDigits(); await makeKeys(); await encrypt(); }, 20);
+</script>
+</body>
+</html>

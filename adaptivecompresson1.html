@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Dense vs GlyphFold-style compute: large matrix + XOR</title>
+<style>
+:root{
+  --bg:#071018;--panel:#0d1925;--panel2:#112233;--line:#284158;--text:#eef7ff;--muted:#9eb3c8;
+  --dense:#76b8ff;--fold:#66e0a7;--gold:#ffd166;--red:#ff7b7b;--ink:#061019;--shadow:0 18px 60px rgba(0,0,0,.28)
+}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:
+radial-gradient(900px 500px at 10% -10%,rgba(72,138,205,.22),transparent 60%),
+radial-gradient(800px 600px at 95% 0%,rgba(60,190,138,.14),transparent 55%),var(--bg);
+color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.wrap{max-width:1480px;margin:auto;padding:24px}.hero{display:grid;grid-template-columns:1.4fr .6fr;gap:18px;align-items:stretch;margin-bottom:18px}
+.heroMain,.heroSide,.card{background:linear-gradient(180deg,rgba(18,37,55,.96),rgba(10,23,35,.96));border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
+.heroMain{padding:24px 26px}.heroSide{padding:20px}.eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--fold);font-weight:900}
+h1{font-size:clamp(28px,4vw,52px);line-height:1.02;margin:9px 0 12px;letter-spacing:-.035em}.lead{font-size:15px;line-height:1.62;color:#bed0e0;max-width:980px}
+.legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.tag,.pill{display:inline-flex;align-items:center;gap:7px;border:1px solid #38546e;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:850;color:#cfe0ef;background:rgba(7,16,24,.45)}
+.dot{width:9px;height:9px;border-radius:50%}.dot.dense{background:var(--dense)}.dot.fold{background:var(--fold)}
+.heroSide h3{margin:0 0 10px}.heroSide p,.note{font-size:12px;line-height:1.5;color:var(--muted)}.formula{font:700 13px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07111a;border:1px solid #243c52;padding:10px;border-radius:10px;color:#dcecff;overflow:auto}
+.section{margin-top:18px}.sectionTitle{display:flex;justify-content:space-between;align-items:end;gap:12px;margin:0 2px 10px}.sectionTitle h2{font-size:24px;margin:0;letter-spacing:-.02em}.sectionTitle p{margin:0;color:var(--muted);font-size:12px}
+.card{padding:16px}.matrixGrid{display:grid;grid-template-columns:360px 1fr;gap:14px}.controlBox{display:grid;gap:12px;align-content:start}.controlRow{display:grid;gap:7px}label{font-size:11px;color:#a9bdd0;font-weight:850;text-transform:uppercase;letter-spacing:.07em}
+select,button{font:inherit}select{width:100%;background:#08131d;color:#eef7ff;border:1px solid #355069;border-radius:10px;padding:10px}
+button{border:1px solid #3b5872;border-radius:10px;background:#1a3045;color:white;padding:10px 13px;font-weight:900;cursor:pointer;transition:.15s transform,.15s background}button:hover{background:#24435f;transform:translateY(-1px)}button:disabled{opacity:.48;cursor:not-allowed;transform:none}.primary{background:#17563d;border-color:#2e9d70}.primary:hover{background:#1c694a}.danger{background:#55262c;border-color:#8d4049}.status{min-height:70px;background:#07111a;border:1px solid #243b50;border-radius:11px;padding:10px;font:11px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#aec4d8;white-space:pre-wrap}
+.heat{width:100%;aspect-ratio:1/1;max-height:290px;background:#061019;border:1px solid #2b455b;border-radius:12px;image-rendering:pixelated}.micro{font-size:10px;color:#8198ae;line-height:1.45}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:12px}.side{border:1px solid #29445b;border-radius:14px;padding:14px;background:rgba(6,16,25,.55)}.side.dense{box-shadow:inset 4px 0 0 var(--dense)}.side.fold{box-shadow:inset 4px 0 0 var(--fold)}.side h3{margin:0 0 10px;font-size:17px}.pipeline{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.node{font-size:10px;padding:6px 8px;border-radius:8px;background:#112235;border:1px solid #304b63;color:#bcd0e1}.arrow{color:#668198}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.metric{background:#08131d;border:1px solid #233c51;border-radius:10px;padding:10px;min-height:72px}.k{font-size:9px;color:#8198ad;text-transform:uppercase;letter-spacing:.08em;font-weight:800}.v{font-size:clamp(17px,2vw,25px);font-weight:950;margin-top:4px;letter-spacing:-.02em}.v.dense{color:var(--dense)}.v.fold{color:var(--fold)}
+.callout{margin-top:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.call{padding:11px;border-radius:11px;background:linear-gradient(135deg,rgba(102,224,167,.13),rgba(118,184,255,.06));border:1px solid #31556a}.call b{font-size:20px;color:var(--gold);display:block}.call span{font-size:10px;color:#9eb4c7}
+.xorControls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.xorGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.architecture{min-height:64px}.bars{display:grid;gap:8px;margin-top:10px}.barRow{display:grid;grid-template-columns:92px 1fr 58px;align-items:center;gap:8px;font-size:10px;color:#9fb5c9}.track{height:9px;background:#07111a;border:1px solid #243d52;border-radius:99px;overflow:hidden}.fill{height:100%;border-radius:99px;transition:width .25s}.fill.dense{background:linear-gradient(90deg,#4d8fd0,var(--dense))}.fill.fold{background:linear-gradient(90deg,#2c9b6d,var(--fold))}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}th,td{padding:9px;border-bottom:1px solid #223b50;text-align:right}th:first-child,td:first-child{text-align:left}th{font-size:9px;color:#8ea5b9;text-transform:uppercase;letter-spacing:.07em}.ok{color:var(--fold);font-weight:900}.no{color:var(--red);font-weight:900}
+.computeTable{margin-top:12px}.chart{display:block;width:100%;height:210px;background:#07111a;border:1px solid #243d52;border-radius:12px;margin-top:12px}
+.foot{margin:18px 2px 4px;padding:14px 16px;border:1px solid #2b465d;background:rgba(8,19,29,.7);border-radius:13px;color:#94abc0;font-size:11px;line-height:1.55}.warn{color:var(--gold);font-weight:900}.good{color:var(--fold);font-weight:900}
+@media(max-width:1000px){.hero,.matrixGrid{grid-template-columns:1fr}.heroSide{display:none}.compare,.xorGrid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.wrap{padding:12px}.heroMain{padding:18px}.metrics,.callout{grid-template-columns:1fr}.sectionTitle{display:block}.sectionTitle p{margin-top:5px}.barRow{grid-template-columns:72px 1fr 48px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <div class="heroMain">
+      <div class="eyebrow">Exact structured-compute demonstration</div>
+      <h1>Dense compute vs a dyadic GlyphFold-style path</h1>
+      <div class="lead">One self-contained browser lab: first compare a very large matrix-vector operation with its exact dense realization; then train two tiny networks on XOR and count the arithmetic needed to reach the same confidence criterion.</div>
+      <div class="legend"><span class="tag"><span class="dot dense"></span>Usual: unstructured dense</span><span class="tag"><span class="dot fold"></span>This: diagonal + permutation + butterfly fold</span><span class="tag">No libraries · no pretrained weights</span></div>
+    </div>
+    <aside class="heroSide">
+      <h3>What “this” means here</h3>
+      <p>The structured operator is deliberately explicit and reproducible:</p>
+      <div class="formula">W = D₂ · H · P · D₁</div>
+      <p><b>H</b> is a normalized Walsh-Hadamard butterfly, <b>P</b> is a fixed permutation, and <b>D₁/D₂</b> are learned or chosen diagonal scales.</p>
+    </aside>
+  </section>
+
+  <section class="section">
+    <div class="sectionTitle"><div><div class="eyebrow">Experiment 1</div><h2>Very large matrix operation</h2></div><p>Same operator and output; different representation and execution.</p></div>
+    <div class="matrixGrid">
+      <div class="card controlBox">
+        <div class="controlRow"><label for="matrixPow">Square matrix dimension</label><select id="matrixPow"></select></div>
+        <canvas id="heat" class="heat" width="256" height="256" aria-label="Structured operator sign pattern"></canvas>
+        <div class="micro">Preview shows a 64×64 sign pattern from the structured operator. Color intensity includes the diagonal scales.</div>
+        <button class="primary" id="bench">Run exact browser benchmark</button>
+        <div id="benchStatus" class="status">Ready. For safety, the live benchmark uses the same construction at up to 1,024 dimensions; the large-dimension operation counts above it remain exact.</div>
+      </div>
+      <div class="card">
+        <div class="compare">
+          <article class="side dense">
+            <h3>Usual dense matrix-vector multiply</h3>
+            <div class="pipeline"><span class="node">x ∈ Rᴺ</span><span class="arrow">→</span><span class="node">store W</span><span class="arrow">→</span><span class="node">N dot products</span><span class="arrow">→</span><span class="node">y</span></div>
+            <div class="metrics">
+              <div class="metric"><div class="k">Dense MACs</div><div class="v dense" id="dMac">-</div></div>
+              <div class="metric"><div class="k">Multiplies</div><div class="v" id="dMul">-</div></div>
+              <div class="metric"><div class="k">Adds</div><div class="v" id="dAdd">-</div></div>
+              <div class="metric"><div class="k">FP32 weight storage</div><div class="v" id="dMem">-</div></div>
+              <div class="metric"><div class="k">Learned coefficients</div><div class="v" id="dParam">-</div></div>
+              <div class="metric"><div class="k">Asymptotic work</div><div class="v">O(N²)</div></div>
+            </div>
+          </article>
+          <article class="side fold">
+            <h3>GlyphFold-style structured execution</h3>
+            <div class="pipeline"><span class="node">scale D₁</span><span class="arrow">→</span><span class="node">route P</span><span class="arrow">→</span><span class="node">log₂N butterflies</span><span class="arrow">→</span><span class="node">scale D₂</span></div>
+            <div class="metrics">
+              <div class="metric"><div class="k">Multiplies</div><div class="v fold" id="sMul">-</div></div>
+              <div class="metric"><div class="k">Add / subtract</div><div class="v" id="sAdd">-</div></div>
+              <div class="metric"><div class="k">Routing moves</div><div class="v" id="sRoute">-</div></div>
+              <div class="metric"><div class="k">FP32 + index storage</div><div class="v" id="sMem">-</div></div>
+              <div class="metric"><div class="k">Learned coefficients</div><div class="v" id="sParam">-</div></div>
+              <div class="metric"><div class="k">Asymptotic work</div><div class="v">O(N log N)</div></div>
+            </div>
+          </article>
+        </div>
+        <div class="callout">
+          <div class="call"><b id="opRatio">-</b><span>fewer scalar arithmetic operations</span></div>
+          <div class="call"><b id="memRatio">-</b><span>smaller operator representation</span></div>
+          <div class="call"><b id="matrixName">-</b><span>effective dense matrix size</span></div>
+        </div>
+        <div class="note"><span class="warn">Scope condition:</span> these savings are exact for the displayed structured family <b>W = D₂HPD₁</b>. An arbitrary unrelated dense matrix generally cannot be replaced by this factorization without approximation or retraining.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="sectionTitle"><div><div class="eyebrow">Experiment 2</div><h2>A very tiny neural net solves XOR</h2></div><p>Both start untrained and stop when all four cases are correct with at least 90% confidence.</p></div>
+    <div class="card">
+      <div class="xorControls"><button class="danger" id="xorReset">Reset both</button><button id="xorStep">Train 1 step</button><button class="primary" id="xorSolve">Train both to criterion</button><span class="pill" id="xorState">untrained</span></div>
+      <div class="xorGrid">
+        <article class="side dense">
+          <h3>Usual tiny MLP: 2 → 3 → 1</h3>
+          <div class="pipeline architecture"><span class="node">x₁,x₂</span><span class="arrow">→</span><span class="node">3 tanh units</span><span class="arrow">→</span><span class="node">sigmoid</span><span class="arrow">→</span><span class="node">XOR</span></div>
+          <div class="metrics">
+            <div class="metric"><div class="k">Parameters</div><div class="v dense">13</div></div>
+            <div class="metric"><div class="k">Forward multiply</div><div class="v">9</div></div>
+            <div class="metric"><div class="k">Forward add</div><div class="v">9</div></div>
+            <div class="metric"><div class="k">Nonlinear calls</div><div class="v">4</div></div>
+            <div class="metric"><div class="k">Steps to solve</div><div class="v" id="dSteps">-</div></div>
+            <div class="metric"><div class="k">Current loss</div><div class="v" id="dLoss">-</div></div>
+          </div>
+        </article>
+        <article class="side fold">
+          <h3>Structured tiny net: fold → square → head</h3>
+          <div class="pipeline architecture"><span class="node">x₁,x₂</span><span class="arrow">→</span><span class="node">d = x₁ − x₂</span><span class="arrow">→</span><span class="node">q = d²</span><span class="arrow">→</span><span class="node">sigmoid(aq+b)</span></div>
+          <div class="metrics">
+            <div class="metric"><div class="k">Parameters</div><div class="v fold">2</div></div>
+            <div class="metric"><div class="k">Forward multiply</div><div class="v">2</div></div>
+            <div class="metric"><div class="k">Forward add/sub</div><div class="v">2</div></div>
+            <div class="metric"><div class="k">Nonlinear calls</div><div class="v">1</div></div>
+            <div class="metric"><div class="k">Steps to solve</div><div class="v" id="sSteps">-</div></div>
+            <div class="metric"><div class="k">Current loss</div><div class="v" id="sLoss">-</div></div>
+          </div>
+        </article>
+      </div>
+
+      <div class="bars">
+        <div class="barRow"><span>MLP confidence</span><div class="track"><div id="dBar" class="fill dense" style="width:0"></div></div><b id="dConf">-</b></div>
+        <div class="barRow"><span>Fold confidence</span><div class="track"><div id="sBar" class="fill fold" style="width:0"></div></div><b id="sConf">-</b></div>
+      </div>
+
+      <table aria-label="XOR predictions">
+        <thead><tr><th>Input</th><th>Target</th><th>Usual MLP probability</th><th>Structured probability</th><th>Both correct?</th></tr></thead>
+        <tbody id="xorRows"></tbody>
+      </table>
+
+      <table class="computeTable" aria-label="Compute comparison">
+        <thead><tr><th>Training compute counter</th><th>Usual 2→3→1 MLP</th><th>Structured fold net</th><th>Reduction after both solve</th></tr></thead>
+        <tbody>
+          <tr><td>Scalar multiplies to criterion</td><td id="dTrainMul">-</td><td id="sTrainMul">-</td><td id="mulSave">-</td></tr>
+          <tr><td>Add/subtracts to criterion</td><td id="dTrainAdd">-</td><td id="sTrainAdd">-</td><td id="addSave">-</td></tr>
+          <tr><td>Nonlinear evaluations to criterion</td><td id="dTrainAct">-</td><td id="sTrainAct">-</td><td id="actSave">-</td></tr>
+          <tr><td>Total counted arithmetic (multiply + add/sub)</td><td id="dTrainArith">-</td><td id="sTrainArith">-</td><td id="arithSave">-</td></tr>
+        </tbody>
+      </table>
+      <canvas id="lossChart" class="chart" width="1300" height="210" aria-label="XOR training loss curves"></canvas>
+      <div class="note"><span class="good">Why the structured net wins here:</span> XOR is exactly represented by the fixed feature <b>(x₁−x₂)²</b> for binary inputs. The compute reduction comes from an inductive bias matched to the task, not from a universal claim that every neural network can be compressed this way.</div>
+    </div>
+  </section>
+
+  <div class="foot"><b>Counting model.</b> A dense MAC is shown as one multiply plus one accumulation. The structured matrix path counts 2N diagonal multiplies, Nlog₂N butterfly add/subtracts, and N routing moves. FP32 storage includes two diagonal vectors and one uint32 permutation. XOR training counters include full-batch forward pass, analytic backpropagation, gradient accumulation, and parameter updates for the code in this page. Comparisons exclude browser rendering and JavaScript loop overhead.</div>
+</div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const fmt=n=>n>=1e12?(n/1e12).toFixed(2)+"T":n>=1e9?(n/1e9).toFixed(2)+"B":n>=1e6?(n/1e6).toFixed(2)+"M":n>=1e3?(n/1e3).toFixed(2)+"K":Math.round(n).toLocaleString();
+const bytes=n=>n>=2**30?(n/2**30).toFixed(2)+" GiB":n>=2**20?(n/2**20).toFixed(2)+" MiB":n>=2**10?(n/2**10).toFixed(2)+" KiB":n+" B";
+const ratio=x=>x>=1000?x.toLocaleString(undefined,{maximumFractionDigits:0})+"×":x.toFixed(x>=100?0:x>=10?1:2)+"×";
+
+// ---------- Large matrix comparison ----------
+for(let p=8;p<=16;p++){const o=document.createElement("option");o.value=p;o.textContent=`2^${p} × 2^${p}  (${(1<<p).toLocaleString()} × ${(1<<p).toLocaleString()})`;if(p===16)o.selected=true;$("matrixPow").appendChild(o)}
+function parity32(x){x^=x>>>16;x^=x>>>8;x^=x>>>4;x&=15;return(0x6996>>>x)&1}
+function bitReverse(x,bits){let y=0;for(let i=0;i<bits;i++){y=(y<<1)|(x&1);x>>>=1}return y}
+function scale1(i,n){return .82+.18*Math.sin((i+.5)*6.283185307179586/n*7)}
+function scale2(i,n){return .88+.12*Math.cos((i+.5)*6.283185307179586/n*5)}
+function drawHeat(){const c=$("heat"),g=c.getContext("2d"),m=64,bits=6,s=c.width/m;g.fillStyle="#061019";g.fillRect(0,0,c.width,c.height);for(let r=0;r<m;r++)for(let j=0;j<m;j++){const sign=parity32(r&bitReverse(j,bits))?-1:1;const mag=scale1(j,m)*scale2(r,m);const a=Math.min(1,.42+.42*mag);g.fillStyle=sign>0?`rgba(102,224,167,${a})`:`rgba(118,184,255,${a})`;g.fillRect(j*s,r*s,Math.ceil(s),Math.ceil(s))}}
+function updateMatrix(){const p=+$('matrixPow').value,n=2**p,dMul=n*n,dAdd=n*(n-1),sMul=2*n,sAdd=n*p,sRoute=n,dMem=dMul*4,sMem=(2*n*4)+(n*4);$('dMac').textContent=fmt(dMul);$('dMul').textContent=fmt(dMul);$('dAdd').textContent=fmt(dAdd);$('dMem').textContent=bytes(dMem);$('dParam').textContent=fmt(dMul);$('sMul').textContent=fmt(sMul);$('sAdd').textContent=fmt(sAdd);$('sRoute').textContent=fmt(sRoute);$('sMem').textContent=bytes(sMem);$('sParam').textContent=fmt(2*n);$('opRatio').textContent=ratio((dMul+dAdd)/(sMul+sAdd));$('memRatio').textContent=ratio(dMem/sMem);$('matrixName').textContent=`${n.toLocaleString()}²`;const live=Math.min(n,1024);$('bench').textContent=`Run exact browser benchmark (${live.toLocaleString()}×${live.toLocaleString()})`;$('benchStatus').textContent=`Ready. The selected ${n.toLocaleString()}×${n.toLocaleString()} counts are exact. Live timing will validate the same operator at ${live.toLocaleString()}×${live.toLocaleString()} (matrix construction excluded).`}
+$('matrixPow').onchange=updateMatrix;drawHeat();updateMatrix();
+
+function makeExactOperator(n){const bits=Math.log2(n),norm=1/Math.sqrt(n),d1=new Float64Array(n),d2n=new Float64Array(n),x=new Float64Array(n),perm=new Uint32Array(n);for(let i=0;i<n;i++){d1[i]=scale1(i,n);d2n[i]=scale2(i,n)*norm;x[i]=Math.sin(i*.071)+.3*Math.cos(i*.019);perm[i]=bitReverse(i,bits)}const W=new Float64Array(n*n);for(let r=0;r<n;r++){const row=r*n,dr=d2n[r];for(let j=0;j<n;j++)W[row+j]=dr*(parity32(r&perm[j])?-1:1)*d1[j]}return{W,d1,d2n,x,perm}}
+function denseRun(op,out){const n=op.x.length,W=op.W,x=op.x;for(let r=0;r<n;r++){let s=0,off=r*n;for(let j=0;j<n;j++)s+=W[off+j]*x[j];out[r]=s}}
+function foldRun(op,out,a,b){const n=op.x.length,p=Math.log2(n);for(let i=0;i<n;i++)a[i]=op.d1[i]*op.x[i];for(let i=0;i<n;i++)b[i]=a[op.perm[i]];for(let len=1;len<n;len<<=1)for(let base=0;base<n;base+=len<<1)for(let j=0;j<len;j++){const u=b[base+j],v=b[base+j+len];b[base+j]=u+v;b[base+j+len]=u-v}for(let i=0;i<n;i++)out[i]=op.d2n[i]*b[i]}
+function timeKernel(fn,minMs=80){fn();let reps=1,elapsed=0;while(reps<=4096){const t=performance.now();for(let i=0;i<reps;i++)fn();elapsed=performance.now()-t;if(elapsed>=minMs)break;reps*=2}return{ms:elapsed/reps,reps}}
+$('bench').onclick=async()=>{const selected=2**(+$('matrixPow').value),n=Math.min(selected,1024),status=$('benchStatus');$('bench').disabled=true;status.textContent=`Building the exact ${n.toLocaleString()}×${n.toLocaleString()} dense realization…`;await new Promise(r=>setTimeout(r,20));try{const t0=performance.now(),op=makeExactOperator(n),build=performance.now()-t0,dOut=new Float64Array(n),sOut=new Float64Array(n),a=new Float64Array(n),b=new Float64Array(n);denseRun(op,dOut);foldRun(op,sOut,a,b);let err=0,mag=0;for(let i=0;i<n;i++){err=Math.max(err,Math.abs(dOut[i]-sOut[i]));mag=Math.max(mag,Math.abs(dOut[i]))}const td=timeKernel(()=>denseRun(op,dOut),70),ts=timeKernel(()=>foldRun(op,sOut,a,b),70),speed=td.ms/ts.ms;status.textContent=`Exact validation at ${n.toLocaleString()}×${n.toLocaleString()}\nmax |dense − fold|: ${err.toExponential(3)} (relative ${(err/Math.max(1e-15,mag)).toExponential(3)})\ndense matrix build: ${build.toFixed(1)} ms (excluded)\ndense matvec: ${td.ms.toFixed(3)} ms/run\nstructured path: ${ts.ms.toFixed(3)} ms/run\nmeasured browser speed ratio: ${speed.toFixed(2)}×\n\nTiming is device/JIT dependent; exact operation counts above are the portable comparison.`}catch(e){status.textContent=`Benchmark failed: ${e.message}`}finally{$('bench').disabled=false}};
+
+// ---------- XOR comparison ----------
+const XOR=[{x:[0,0],y:0},{x:[0,1],y:1},{x:[1,0],y:1},{x:[1,1],y:0}];
+const DENSE_MUL_STEP=121,DENSE_ADD_STEP=117,DENSE_ACT_STEP=16;
+const FOLD_MUL_STEP=14,FOLD_ADD_STEP=22,FOLD_ACT_STEP=4;
+let dm,sm,dSteps,sSteps,dSolved,sSolved,dHist,sHist;
+const sigmoid=z=>1/(1+Math.exp(-Math.max(-40,Math.min(40,z))));
+function resetXor(){dm={w:[[-.7312715117751976,.6948674738744653],[.5275492379532281,-.4898619485211566],[-.009129825816118098,-.10101787042252375]],b:[.0303185945445526,.05774467022710264,-.08122808264515302],v:[-.9433050469559874,.6715302078397394,-.13446586418989326],c:0};sm={a:.1,b:0};dSteps=0;sSteps=0;dSolved=false;sSolved=false;dHist=[];sHist=[];updateXor()}
+function denseForward(x){const h=dm.w.map((w,j)=>Math.tanh(w[0]*x[0]+w[1]*x[1]+dm.b[j]));return sigmoid(dm.v[0]*h[0]+dm.v[1]*h[1]+dm.v[2]*h[2]+dm.c)}
+function foldForward(x){const d=x[0]-x[1],q=d*d;return sigmoid(sm.a*q+sm.b)}
+function denseTrain(){const gw=[[0,0],[0,0],[0,0]],gb=[0,0,0],gv=[0,0,0];let gc=0;for(const z of XOR){const h=dm.w.map((w,j)=>Math.tanh(w[0]*z.x[0]+w[1]*z.x[1]+dm.b[j])),p=sigmoid(dm.v[0]*h[0]+dm.v[1]*h[1]+dm.v[2]*h[2]+dm.c),d=p-z.y;for(let j=0;j<3;j++){gv[j]+=d*h[j];const dh=d*dm.v[j]*(1-h[j]*h[j]);gw[j][0]+=dh*z.x[0];gw[j][1]+=dh*z.x[1];gb[j]+=dh}gc+=d}const lr=.5/4;for(let j=0;j<3;j++){dm.w[j][0]-=lr*gw[j][0];dm.w[j][1]-=lr*gw[j][1];dm.b[j]-=lr*gb[j];dm.v[j]-=lr*gv[j]}dm.c-=lr*gc;dSteps++}
+function foldTrain(){let ga=0,gb=0;for(const z of XOR){const d=z.x[0]-z.x[1],q=d*d,p=sigmoid(sm.a*q+sm.b),e=p-z.y;ga+=e*q;gb+=e}const lr=.5/4;sm.a-=lr*ga;sm.b-=lr*gb;sSteps++}
+function stats(fn){let loss=0,minConf=1;const p=[];for(const z of XOR){const v=fn(z.x);p.push(v);loss+=-(z.y*Math.log(Math.max(1e-12,v))+(1-z.y)*Math.log(Math.max(1e-12,1-v)));minConf=Math.min(minConf,z.y?v:1-v)}return{p,loss:loss/4,minConf,solved:minConf>=.9}}
+function updateXor(){const ds=stats(denseForward),ss=stats(foldForward);if(ds.solved&&!dSolved)dSolved=true;if(ss.solved&&!sSolved)sSolved=true;dHist.push(ds.loss);sHist.push(ss.loss);$('dSteps').textContent=dSolved?dSteps.toLocaleString():`${dSteps.toLocaleString()}…`;$('sSteps').textContent=sSolved?sSteps.toLocaleString():`${sSteps.toLocaleString()}…`;$('dLoss').textContent=ds.loss.toFixed(4);$('sLoss').textContent=ss.loss.toFixed(4);$('dConf').textContent=(100*ds.minConf).toFixed(1)+"%";$('sConf').textContent=(100*ss.minConf).toFixed(1)+"%";$('dBar').style.width=(100*ds.minConf)+"%";$('sBar').style.width=(100*ss.minConf)+"%";$('xorRows').innerHTML=XOR.map((z,i)=>{const dc=(ds.p[i]>=.5)==z.y,sc=(ss.p[i]>=.5)==z.y;return`<tr><td>${z.x[0]} XOR ${z.x[1]}</td><td>${z.y}</td><td>${ds.p[i].toFixed(4)}</td><td>${ss.p[i].toFixed(4)}</td><td class="${dc&&sc?'ok':'no'}">${dc&&sc?'yes':'not yet'}</td></tr>`}).join('');const dMul=dSteps*DENSE_MUL_STEP,sMul=sSteps*FOLD_MUL_STEP,dAdd=dSteps*DENSE_ADD_STEP,sAdd=sSteps*FOLD_ADD_STEP,dAct=dSteps*DENSE_ACT_STEP,sAct=sSteps*FOLD_ACT_STEP;$('dTrainMul').textContent=fmt(dMul);$('sTrainMul').textContent=fmt(sMul);$('dTrainAdd').textContent=fmt(dAdd);$('sTrainAdd').textContent=fmt(sAdd);$('dTrainAct').textContent=fmt(dAct);$('sTrainAct').textContent=fmt(sAct);$('dTrainArith').textContent=fmt(dMul+dAdd);$('sTrainArith').textContent=fmt(sMul+sAdd);const ready=dSolved&&sSolved;$('mulSave').textContent=ready?ratio(dMul/sMul):'-';$('addSave').textContent=ready?ratio(dAdd/sAdd):'-';$('actSave').textContent=ready?ratio(dAct/sAct):'-';$('arithSave').textContent=ready?ratio((dMul+dAdd)/(sMul+sAdd)):'-';$('xorState').textContent=ready?`both solved · ${ratio((dMul+dAdd)/(sMul+sAdd))} less counted arithmetic`:dSolved?'MLP solved; fold training':sSolved?'fold solved; MLP training':'training / untrained';drawLoss();return{ds,ss}}
+function drawLoss(){const c=$('lossChart'),g=c.getContext('2d'),W=c.width,H=c.height;g.fillStyle='#07111a';g.fillRect(0,0,W,H);g.strokeStyle='#20384d';g.lineWidth=1;for(let i=0;i<=4;i++){const y=16+i*(H-38)/4;g.beginPath();g.moveTo(42,y);g.lineTo(W-12,y);g.stroke()}const maxLen=Math.max(dHist.length,sHist.length,2),maxLoss=Math.max(1,...dHist,...sHist);function line(a,color){if(a.length<2)return;g.strokeStyle=color;g.lineWidth=3;g.beginPath();a.forEach((v,i)=>{const x=42+i/(maxLen-1)*(W-58),y=H-22-(Math.min(maxLoss,v)/maxLoss)*(H-42);i?g.lineTo(x,y):g.moveTo(x,y)});g.stroke()}line(dHist,'#76b8ff');line(sHist,'#66e0a7');g.fillStyle='#8fa7bc';g.font='11px system-ui';g.fillText('loss',8,18);g.fillStyle='#76b8ff';g.fillText('usual MLP',50,18);g.fillStyle='#66e0a7';g.fillText('structured',130,18);g.fillStyle='#8fa7bc';g.fillText(`steps: MLP ${dSteps} · fold ${sSteps}`,W-180,H-7)}
+function trainOne(){if(!dSolved)denseTrain();if(!sSolved)foldTrain();updateXor()}
+$('xorReset').onclick=resetXor;$('xorStep').onclick=trainOne;$('xorSolve').onclick=async()=>{$('xorSolve').disabled=true;$('xorStep').disabled=true;for(let block=0;block<240&&(!dSolved||!sSolved);block++){for(let i=0;i<25;i++){if(!dSolved){denseTrain();if(stats(denseForward).solved)dSolved=true}if(!sSolved){foldTrain();if(stats(foldForward).solved)sSolved=true}if(dSolved&&sSolved)break}updateXor();await new Promise(r=>requestAnimationFrame(r));if(dSteps>5000||sSteps>5000)break}$('xorSolve').disabled=false;$('xorStep').disabled=false};
+resetXor();
+</script>
+</body>
+</html>

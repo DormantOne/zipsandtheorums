@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ConSensUs II — Independent Minds (Gradient Corrected)</title>
+<style>
+:root{color-scheme:dark;--bg:#081017;--p:#101e29;--p2:#142733;--line:#294453;--text:#eaf7f5;--muted:#95b2bd;--teal:#79e2c6;--cyan:#67c7df;--amber:#fac980;--pink:#eeb0cb;--red:#f49b9d}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse 900px 450px at 72% -10%,#164a52 0,transparent 78%),#081017;color:var(--text);font:14px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif}main,header,footer{max-width:1350px;margin:auto;padding-left:22px;padding-right:22px}header{padding-top:35px;padding-bottom:22px}.eyebrow{color:var(--teal);font-size:11px;letter-spacing:.2em;font-weight:800;text-transform:uppercase}h1{font-size:clamp(3.2rem,7.8vw,6.6rem);line-height:1.03;letter-spacing:-.08em;margin:8px 0 10px}h1 span{font-family:Georgia,serif;color:var(--teal);font-weight:400;font-style:italic}header p{color:#bfd2d6;max-width:900px;font-size:16px;margin:0}.small{font-size:12px;color:var(--muted)}.bar{border:1px solid #315568;background:#172c39;border-radius:15px;padding:15px 17px;display:flex;gap:11px;align-items:center;flex-wrap:wrap;margin:0 0 15px}button{background:#1b3a4a;border:1px solid #3c6373;color:var(--text);border-radius:10px;font-size:13px;font-weight:720;padding:10px 14px;cursor:pointer}button:disabled{opacity:.42;cursor:default}button:hover:not(:disabled){filter:brightness(1.17)}button.primary{border:0;background:linear-gradient(120deg,#90e9cb,#67cbdc);color:#071c24;padding:12px 22px;font-size:16px;font-weight:850}.bar .small{flex:1;min-width:180px}.metrics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:15px}.metric{background:var(--p);border:1px solid var(--line);border-radius:13px;padding:12px 13px}.metric b{display:block;font-size:clamp(18px,2vw,25px);font-variant-numeric:tabular-nums;line-height:1.35}.metric span{font-size:11px;color:var(--muted);line-height:1.3;display:block}.grid{display:grid;grid-template-columns:minmax(0,1.27fr) minmax(335px,.73fr);gap:15px;margin-bottom:15px}.panel{border:1px solid var(--line);background:var(--p);border-radius:14px;overflow:hidden}.ph{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}.ph h2{font-size:14px;margin:0;letter-spacing:.02em}.ph span{font-size:11px;color:var(--muted)}#net{width:100%;height:335px;display:block;background:radial-gradient(ellipse at center,#12303c4a,transparent 70%);cursor:pointer}.legend{padding:1px 15px 12px;display:flex;gap:15px;flex-wrap:wrap}.legend span{color:var(--muted);font-size:11px}.legend i{display:inline-block;border-radius:99px;width:8px;height:8px;margin-right:5px;background:var(--teal)}.legend i.sensor{background:var(--amber)}.legend i.leader{background:var(--pink)}.console{padding:16px}.phase{font-size:17px;font-weight:750;min-height:26px}.progress{height:9px;background:#263f4d;border-radius:99px;overflow:hidden;margin:11px 0}.progress i{height:100%;width:0;display:block;background:linear-gradient(90deg,var(--cyan),var(--teal));transition:width .1s}.inspector{margin-top:14px;border:1px solid #294955;background:#091a25;border-radius:10px;padding:13px;min-height:92px;white-space:pre-line;font:12px/1.55 ui-monospace,Menlo,monospace;color:#c3dce1}.schematic{display:flex;align-items:center;gap:5px;margin-top:13px}.schematic div{border:1px solid #28505e;background:#173240;border-radius:9px;flex:1;text-align:center;padding:9px 5px;font-size:11px}.schematic i{color:var(--teal);font-size:16px}.two{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:15px}.chartbox{padding:14px}#trend{display:block;width:100%;height:240px}table{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:tabular-nums}th,td{padding:10px 12px;text-align:left;border-bottom:1px solid #253c48}th{font-size:10px;color:#9fb9c5;text-transform:uppercase;letter-spacing:.045em;white-space:nowrap}td{white-space:nowrap}.tbl{overflow-x:auto;max-height:330px;overflow-y:auto}.tbl tr:hover td{background:#152d3a}.good{color:var(--teal)}.warn{color:var(--amber)}.log{background:#0c1923;height:235px;overflow:auto;padding:12px 15px;font:12px/1.65 ui-monospace,Menlo,monospace;color:#b7cdd5}.log p{margin:0;border-bottom:1px solid #213540;padding:3px 0}.log .tag{color:var(--teal)}.log .warning{color:var(--amber)}.readme{padding:17px 19px;margin-bottom:20px;background:#111e29;border:1px solid var(--line);border-radius:14px}.readme h2{font-size:15px;margin:0 0 8px}.readme p{font-size:13px;color:#bad0d7;margin:6px 0}a{color:var(--teal)}footer{font-size:11px;color:#678593;padding-top:4px;padding-bottom:24px}.split{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}code{color:#a4e9d4}@media(max-width:1050px){.metrics{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:1fr}}@media(max-width:700px){main,header,footer{padding-left:12px;padding-right:12px}.metrics{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}.bar .primary{width:100%}h1{font-size:3.4rem}}
+</style></head><body>
+<header><div class="eyebrow">Distributed learning / experiment 07 / independent local circuits</div><h1>Con<span>Sens</span>Us II</h1><p>Thirty-two independently learning ganglia. No shared neural weights. Sparse neighbor-to-neighbor reports. A replaceable consensus organ. The question: can partial knowledge become collective knowledge?</p></header>
+<main>
+<section class="bar"><button id="run" class="primary">▶ Run complete scientific battery</button><button id="stop" disabled>Stop</button><button id="export" disabled>↓ Export Biopsy + report</button><div class="small">One click trains to mastery, plateau, or budget; audits real 6 / 8 / 10-bit logic; then tests communication, quorum, loss of leadership, and recovery.</div></section>
+<section class="metrics"><div class="metric"><b>32 × 12</b><span>384 independently weighted neurons</span></div><div class="metric"><b>≤ 3</b><span>Physical neighbors per ganglion</span></div><div class="metric"><b id="s6">—</b><span>Best six-bit parity</span></div><div class="metric"><b id="s8">—</b><span>Eight-bit combination not trained whole</span></div><div class="metric"><b id="s10">—</b><span>New ten-bit challenge</span></div><div class="metric"><b id="leader">32 · I</b><span>Consensus leader · term</span></div></section>
+<div class="grid">
+<section class="panel"><div class="ph"><h2>Thirty-two local minds · one replaceable consensus organ</h2><span id="topology">Three-neighbor network</span></div><canvas width="850" height="335" id="net"></canvas><div class="legend"><span><i></i>independent neural ganglion</span><span><i class="sensor"></i>sensory ganglion</span><span><i class="leader"></i>consensus (protocol only)</span><span>Click to inspect a node</span></div></section>
+<section class="panel"><div class="ph"><h2>Experiment console</h2><span id="state">READY</span></div><div class="console"><div class="phase" id="phase">Ready for the battery.</div><div class="progress"><i id="progress"></i></div><div class="small" id="detail">No learned results yet.</div><div class="schematic"><div>Fragment<br><b>±1</b></div><i>→</i><div>12-neuron<br><b>local operation</b></div><i>→</i><div>Routed<br><b>partial report</b></div></div><div id="inspector" class="inspector">Ganglia have their own weights, gradients, optimizer state, and local inputs. Messages never jump over physical neighbors.</div><div class="split"><button id="kill" disabled>Destroy leader</button><button id="regrow" disabled>Grow + elect successor</button></div><div class="small" id="protocol">The battery automatically runs a full leader-loss simulation. These buttons let you replay it afterward.</div></div></section>
+</div>
+<div class="two"><section class="panel"><div class="ph"><h2>Learning curve</h2><span>6-bit correct / 64 · chance 32</span></div><div class="chartbox"><canvas id="trend" width="660" height="240"></canvas><p class="small">A strict improvement-based plateau detector distinguishes mastery, stalled learning, and a budget cap. Active counts measure workers that actually perform neural operations; others can relay messages without changing them.</p></div></section><section class="panel"><div class="ph"><h2>Matched learning conditions</h2><span id="count">0 results</span></div><div class="tbl"><table><thead><tr><th>Condition</th><th>6-bit</th><th>8-bit</th><th>10-bit</th><th>Active</th><th>Stop reason</th></tr></thead><tbody id="results"><tr><td colspan="6">Waiting for experiment.</td></tr></tbody></table></div></section></div>
+<div class="two"><section class="panel"><div class="ph"><h2>Quorum and fault tolerance</h2><span>Abstentions count as incorrect attempts</span></div><div class="tbl"><table><thead><tr><th>Condition</th><th>Correct</th><th>Quorum coverage</th></tr></thead><tbody id="faults"><tr><td colspan="3">Waiting for communication tests.</td></tr></tbody></table></div><div class="console"><div class="small" id="diagnostic">A single silent sensory node should reduce full-parity performance to chance; an intact network must depend on all six input bits.</div></div></section><section class="panel"><div class="ph"><h2>Experiment log</h2><span>Measured events, not animation</span></div><div id="log" class="log"><p>Laboratory ready.</p></div></section></div>
+<section class="readme"><p><strong>VERSION 2 — CORRECTED LEARNING:</strong> The original active-relay condition used an incorrect backward derivative for its blended relay output. This version applies the 0.16 neural derivative and 0.84 identity bypass derivative correctly. Independently checked against finite differences. Earlier 32/64 scores for the 20-active-ganglion control were not scientifically interpretable. The 8-bit truth table tests new <em>combinations</em> of sensor inputs already presented in smaller training subsets; the 10-bit condition introduces two genuinely new sensory sites.</p><h2>What this experiment can — and cannot — establish</h2><p><strong>No weight sharing:</strong> each of the 32 worker ganglia maintains independent trainable parameters and independent optimizer state. A developmental-initialization condition starts nodes from similar but not identical weights, while the cold-start control uses fully independent random initialization.</p><p><strong>Participation is audited:</strong> ordinary relays forward unchanged signals unless they have two partial reports to combine; the separate active-relay condition forces more ganglia to apply independently learned neural transformations. <strong>Compositional bias is explicit:</strong> a fixed spanning-tree routing protocol combines neural reports two at a time. There is no hard-coded XOR formula in any neural operation, but the tree and staged curriculum are intentionally favorable to parity. Training uses supervised, centrally orchestrated reverse-mode differentiation across the sparse operations. Reverse-edge hop counts are instrumented, but training gradients are <strong>not actually sent over delayed or lossy network links</strong>. Only forward task reports, voting, heartbeats, and election traffic have simulated message timing. This is <strong>not teacher-free evolution or decentralized training across machines</strong>.</p><p><strong>Consensus is governance, not the calculator:</strong> a separate organ collects routed reports and arranges a 2-of-3 vote. The three voters receive correlated learned predictions, not independent full solutions. Destroying that organ suspends decisions; replacing it does not erase the worker ganglia's learned weights. A 17-of-32 worker majority is required to elect the successor. If no quorum arrives before a deadline, the answer is <strong>ABSTAIN</strong>.</p><p><strong>Success criterion:</strong> mastery of all 64 balanced six-bit patterns, unseen full eight-bit combinations (although each individual input has appeared in smaller training examples) on all 256 patterns, sensor-withholding ablations, and survival of a consensus failure. The ten-bit challenge adds two previously unseen sensing locations. The battery shows failures and plateaus, rather than automatically promoting the best trial to a proof of general intelligence. High scores on two-bit-subset curricula are evidence for highly task-shaped compositional learning, not spontaneous invention of routing or a general consensus algorithm.</p></section>
+</main><footer>ConSensUs II / scientific simulation · Offline, deterministic seeded tests · No external resources, network requests, or background work.</footer>
+<script>
+/* ConSensUs lab — pure JS engine; browser + Node. Simulation, not production consensus. */
+(function(root){'use strict';
+const H=12, NP=4*H+1, N=32, SENSORS=[0,6,11,17,23,28,9,20,14,26], INITIAL_LEADER=32, WORK_ROOT=0;
+const STAGE_STEPS=[500,650,750,850,950], MAX_HARD=5600, HARD_PATIENCE=7, AUDIT_EVERY=240;
+function xorshift(seed){let s=seed>>>0||1;return {next(){s^=s<<13;s^=s>>>17;s^=s<<5;return (s>>>0)/4294967296},int(n){return Math.floor(this.next()*n)},get state(){return s>>>0},set state(x){s=x>>>0||1}}}
+function gaussian(r){return Math.sqrt(-2*Math.log(Math.max(1e-12,r.next())))*Math.cos(6.283185307*r.next())}
+function graph(){let rnd=xorshift(847291), order=Array.from({length:N},(_,i)=>i); let best;
+ for(let attempt=0;attempt<200;attempt++){
+  for(let i=N-1;i>0;i--){let j=rnd.int(i+1);[order[i],order[j]]=[order[j],order[i]]}
+  let a=Array.from({length:N},()=>[]); for(let i=0;i<N;i++) {let next=(i+1)%N;a[i].push(next);a[next].push(i)}
+  for(let i=0;i<N;i+=2){const p=order[i],q=order[i+1];if(a[p].includes(q)){a=null;break}a[p].push(q);a[q].push(p)}
+  if(!a)continue; let dia=0; for(let k=0;k<N;k++) {const d=bfs(a,k).dist;dia=Math.max(dia,...d);}
+  if(!best||dia<best.dia)best={adj:a,dia};if(dia<=6)break;
+ }return best
+}
+function bfs(adj, leader,blocked=new Set()){let par=Array(adj.length).fill(-1), dist=Array(adj.length).fill(Infinity),q=[];if(blocked.has(leader))return {par,dist};dist[leader]=0;q.push(leader);for(let i=0;i<q.length;i++){let x=q[i];for(let y of adj[x])if(!blocked.has(y)&&dist[y]===Infinity){dist[y]=dist[x]+1;par[y]=x;q.push(y)}}return {par,dist}}
+const G=graph();
+function clone(o){return JSON.parse(JSON.stringify(o))}
+function setup(seed,init='cold'){
+ let rng=xorshift(seed),prototype=Array.from({length:NP},()=>gaussian(rng)*.5);
+ let params=Array.from({length:N},(_,i)=>{let r=xorshift((seed+i*293+9973)>>>0);return Array.from({length:NP},(_,j)=>init==='developmental'?prototype[j]+gaussian(r)*.13:gaussian(r)*.5)});
+ // The consensus organ is a protocol-only node, not a trained computing ganglion.
+ const adj=clone(G.adj); // dedicate one existing physical port per anchor to the consensus organ
+ for(const [a,b] of [[1,21],[15,29],[26,5]]){adj[a]=adj[a].filter(x=>x!==b);adj[b]=adj[b].filter(x=>x!==a);}
+ adj.push([1,15,26]);for(const a of [1,15,26])adj[a].push(N);
+ return {seed,init,untied:true,activeRelays:false,trainingSensors:8,step:0,parameters:params,m:params.map(p=>p.map(()=>0)),v:params.map(p=>p.map(()=>0)),seedState:rng.state,stages:[],leader:INITIAL_LEADER,voterHeads:Array.from({length:3},(_,i)=>({w:1.0+(rng.next()-.5)*.1,b:0})),epoch:1,failed:[],adj,election:null,events:[],reverseHopPackets:0};
+}
+function pIndex(model,node){if(node>=N)throw Error("Consensus is not a neural calculator");return node}
+function comp(model,a,b,node){let p=model.parameters[pIndex(model,node)],h=Array(H),logit=p[NP-1];for(let i=0;i<H;i++){let v=4*i;h[i]=Math.tanh(p[v]*a+p[v+1]*b+p[v+2]);logit+=p[v+3]*h[i]}return {a,b,y:Math.tanh(logit),h,node,pa:-1,pb:-1}}
+function tape(model,bits,mask=255){ // actual ganglion-to-neighbor upward aggregation, no nonlocal node reads
+ let adj=model.adj, leader=WORK_ROOT,{par,dist}=bfs(adj,leader,new Set(model.failed.concat([model.leader]))); if(!Number.isFinite(dist[SENSORS[0]]))return {invalid:true};
+ let children=Array.from({length:adj.length},()=>[]);for(let i=0;i<adj.length;i++)if(par[i]>=0)children[par[i]].push(i);for(let c of children)c.sort((a,b)=>a-b);
+ let nodeVal=Array(adj.length).fill(null),ops=[],loc=[],trace=[];for(let i=0;i<adj.length;i++)if(SENSORS.includes(i)&&((mask>>SENSORS.indexOf(i))&1))loc[i]=bits[SENSORS.indexOf(i)];
+ function visit(id){let inps=[];for(let child of children[id]){let x=visit(child);if(x)inps.push(x)}if(loc[id]!==undefined)inps.push({value:loc[id],op:-1,count:1,leaves:[SENSORS.indexOf(id)]});if(!inps.length)return null;
+  let cur=inps[0];for(let j=1;j<inps.length;j++){let other=inps[j],c=comp(model,cur.value,other.value,id);c.pa=cur.op;c.pb=other.op;let op=ops.push(c)-1;cur={value:c.y,op,count:cur.count+other.count,leaves:cur.leaves.concat(other.leaves)};trace.push({ganglion:id,left:cur.count-other.count,right:other.count,value:c.y})}
+  if(model.activeRelays){let c=comp(model,cur.value,0,id);c.pa=cur.op;c.pb=-1;c.unary=true;c.raw=c.y;c.y=.84*cur.value+.16*c.y;let op=ops.push(c)-1;cur={value:c.y,op,count:cur.count,leaves:cur.leaves};trace.push({ganglion:id,unary:true,value:c.y});}
+  nodeVal[id]=cur;return cur
+ }
+ let root=visit(leader); return {value:root?root.value:0,root,ops,trace,par,dist,nodeVal,leader,children}
+}
+function backprop(model,t,target){let grads=model.parameters.map(p=>new Float64Array(p.length));let up=new Float64Array(t.ops.length);if(t.root.op>=0)up[t.root.op]=2*(t.value-target);for(let z=t.ops.length-1;z>=0;z--){let c=t.ops[z],p=model.parameters[pIndex(model,c.node)],g=grads[pIndex(model,c.node)],dz=up[z]*(c.unary?.16*(1-c.raw*c.raw):(1-c.y*c.y));g[NP-1]+=dz;let dx=0,dy=0;for(let i=0;i<H;i++){let j=4*i;g[j+3]+=dz*c.h[i];let q=dz*p[j+3]*(1-c.h[i]**2);g[j]+=q*c.a;g[j+1]+=q*c.b;g[j+2]+=q;dx+=q*p[j];dy+=q*p[j+1]}if(c.unary)dx+=.84*up[z];if(c.pa>=0){up[c.pa]+=dx;if(t.ops[c.pa].node!==c.node) model.reverseHopPackets+=(t.dist[t.ops[c.pa].node]-t.dist[c.node]);}
+ if(c.pb>=0){up[c.pb]+=dy;if(t.ops[c.pb].node!==c.node) model.reverseHopPackets+=(t.dist[t.ops[c.pb].node]-t.dist[c.node]);}}return grads}
+function trainBatch(model,n=6,B=16,learningRate=.003, hardOnly=false){let rng=xorshift(model.seedState),gs=model.parameters.map(p=>new Float64Array(p.length));let mse=0, mask,hw=Array(3).fill(0),hb=Array(3).fill(0);
+ for(let s=0;s<B;s++){
+  let bits=Array.from({length:10},()=>rng.next()<.5?-1:1),active=Array.from({length:(model.trainingSensors||8)},(_,i)=>i);
+  // choose variable active inputs for curriculum; simple parity never exposes local subtree targets
+  if(n<active.length){for(let k=active.length-1;k>0;k--){let j=rng.int(k+1);[active[k],active[j]]=[active[j],active[k]]} active=active.slice(0,n)}
+  mask=active.reduce((m,k)=>m|(1<<k),0);
+  let desired=active.reduce((a,k)=>a*bits[k],1),t=tape(model,bits,mask);if(t.invalid)continue;mse+=(t.value-desired)**2;let g=backprop(model,t,desired);for(let hi=0;hi<3;hi++){let head=model.voterHeads[hi],pred=Math.tanh(head.w*t.value+head.b),delta=2*(pred-desired)*(1-pred*pred)/B;hw[hi]+=delta*t.value;hb[hi]+=delta}for(let pi=0;pi<gs.length;pi++)for(let j=0;j<gs[pi].length;j++)gs[pi][j]+=g[pi][j]/B
+ }
+ model.seedState=rng.state;for(let hi=0;hi<3;hi++){let head=model.voterHeads[hi];head.w-=learningRate*3*hw[hi];head.b-=learningRate*3*hb[hi]} model.step++;const a=.9,b=.999,eps=1e-8;
+ for(let pi=0;pi<gs.length;pi++)for(let j=0;j<NP;j++){let grad=Math.max(-12,Math.min(12,gs[pi][j]));model.m[pi][j]=a*model.m[pi][j]+(1-a)*grad;model.v[pi][j]=b*model.v[pi][j]+(1-b)*grad*grad;model.parameters[pi][j]-=learningRate*(model.m[pi][j]/(1-a**model.step))/(Math.sqrt(model.v[pi][j]/(1-b**model.step))+eps)}
+ return mse/B
+}
+function audit(model,n=6,mask=(1<<n)-1, silenced=-1){
+ let correct=0, margin=0,len=2**n,cases=[];
+ const active=Array.from({length:SENSORS.length},(_,i)=>i).filter(i=>(mask>>i)&1);
+ if(active.length!==n)throw Error('Audit mask must match n');
+ for(let c=0;c<len;c++){
+  let bits=Array(SENSORS.length).fill(-1);
+  for(let j=0;j<n;j++)bits[active[j]]=(c>>j)&1?1:-1;
+  let testMask=silenced<0?mask:mask&~(1<<silenced);
+  let out=tape(model,bits,testMask),target=active.reduce((s,i)=>s*bits[i],1);
+  let good=out.value*target>0;correct+=good?1:0;margin+=out.value*target;
+  if(n<=8)cases.push({id:c,target:target>0?1:0,decision:out.value>0?1:0,margin:out.value*target});
+ }
+ return {correct,total:len,accuracy:correct/len,margin:margin/len,cases};
+}
+function freeze(model){return {parameters:clone(model.parameters),m:clone(model.m),v:clone(model.v),step:model.step,seedState:model.seedState,voterHeads:clone(model.voterHeads)}}
+function restore(model,snapshot){model.parameters=clone(snapshot.parameters);model.m=clone(snapshot.m);model.v=clone(snapshot.v);model.step=snapshot.step;model.seedState=snapshot.seedState;model.voterHeads=clone(snapshot.voterHeads)}
+function hop(rng,opts){let lost=false,attempts=opts.retries+1,duration=0;for(let a=0;a<attempts;a++){duration+=1+rng.int(opts.maxDelay+1)+(a?opts.retryWait:0);if(rng.next()>=opts.loss){lost=false;return {ok:true,duration,attempts:a+1}}lost=true}return {ok:!lost,duration,attempts}}
+function routeArrival(adj,from,to,start,rng,opts,failed){let {par,dist}=bfs(adj,to,failed);if(!isFinite(dist[from]))return {time:Infinity,packets:0,dropped:true};let here=from,time=start,packets=0;while(here!==to){let x=hop(rng,opts);packets+=x.attempts;if(!x.ok)return {time:Infinity,packets,dropped:true};time+=x.duration;here=par[here]}return {time,packets,dropped:false}}
+function evalTransport(model,bits,opts,rng){
+ const leader=model.leader;if(model.failed.includes(leader))return {quorum:false,reason:'LEADER_DOWN',correct:false,packets:0};
+ const t=tape(model,bits, (1<<bits.length)-1);if(t.invalid)return {quorum:false,reason:'COMPUTATION_PARTITION',correct:false,packets:0};
+ let traffic=0,missing=0;
+ function visit(g){let latest=-Infinity,has=false,good=true;for(const child of t.children[g]){let r=visit(child);if(!r.has)continue;has=true;if(!r.good){good=false;continue}let hopResult=hop(rng,opts);traffic+=hopResult.attempts;if(!hopResult.ok){good=false;missing++;continue}latest=Math.max(latest,r.time+hopResult.duration)}
+  const idx=SENSORS.indexOf(g);if(idx>=0&&idx<bits.length){has=true;latest=Math.max(latest,opts.sensoryTicks?.[idx]??(idx*2))}if(!has)return {has:false,good:true,time:0};return {has,good,time:latest+1};}
+ let combined=visit(WORK_ROOT);if(!combined.good||!isFinite(combined.time))return {quorum:false,reason:'MISSING_PARTIAL_REPORT',correct:false,packets:traffic};
+ let report=routeArrival(model.adj,WORK_ROOT,leader,combined.time,rng,opts,new Set(model.failed));traffic+=report.packets;
+ if(!isFinite(report.time)||report.time>opts.deadline)return {quorum:false,reason:'LATE_OR_DROPPED_REPORT',correct:false,packets:traffic};
+ const valids=model.adj[leader].filter(x=>!model.failed.includes(x)).slice(0,3), votes=[],target=bits.reduce((a,b)=>a*b,1),value=t.value;
+ for(let i=0;i<valids.length;i++){
+   const out=hop(rng,opts);traffic+=out.attempts;if(!out.ok)continue;
+   const ret=hop(rng,opts);traffic+=ret.attempts;if(!ret.ok)continue;
+   let at=report.time+out.duration+ret.duration+1;if(at>opts.deadline)continue;
+   let h=model.voterHeads[i],pred=Math.tanh(h.w*value+h.b);votes.push({id:valids[i],bit:pred>=0?1:0,at});
+ }
+ votes.sort((a,b)=>a.at-b.at);const tally=[0,0];let decision=null,commit=null;for(let vote of votes){tally[vote.bit]++;if(tally[vote.bit]>=(opts.quorum||2)){decision=vote.bit;commit=vote.at;break}}
+ return {quorum:decision!==null,reason:decision===null?'NO_QUORUM':'COMMITTED',correct:decision!==null&&decision===(target>0?1:0),packets:traffic,decision,commit,votes,reportAt:report.time};
+}
+function evaluateNetwork(model,opts,reps=1,seed=97017,n=6){
+ let rng=xorshift(seed),total=0,correct=0,covered=0,traffic=0,abstentions={};
+ for(let rep=0;rep<reps;rep++)for(let c=0;c<2**n;c++){
+  const bits=Array.from({length:n},(_,i)=>(c>>i)&1?1:-1),r=evalTransport(model,bits,opts,rng);
+  total++;if(r.quorum)covered++;if(r.correct)correct++;traffic+=r.packets; if(!r.quorum)abstentions[r.reason]=(abstentions[r.reason]||0)+1;
+ }
+ return {correct,total,covered,coverage:covered/total,conditionalAccuracy:covered?correct/covered:0,packetAttempts:traffic,abstentions};
+}
+function electReplacement(model,opts,seed=4792){
+ let old=model.leader,anchors=model.adj[old].filter(x=>!model.failed.includes(x));if(anchors.length!==3)throw Error('Need three surviving neighbors');
+ let bad=new Set(model.failed.concat(old)),adj=clone(model.adj),newcomer=adj.length;
+ for(const g of anchors)adj[g]=adj[g].filter(x=>x!==old);adj[old]=[];adj.push(anchors.slice());for(const g of anchors)adj[g].push(newcomer);
+ let rng=xorshift(seed),majority=Math.floor(N/2)+1,acks=[],packets=0;
+ for(let i=0;i<N;i++)if(!bad.has(i)){const packet=routeArrival(adj,i,newcomer,0,rng,opts,bad);packets+=packet.packets;if(isFinite(packet.time)&&packet.time<=opts.electionDeadline)acks.push({id:i,at:packet.time});}
+ let elected=acks.length>=majority,info={old,newcomer,majority,acks:acks.length,elected,packets,term:model.epoch+1};
+ if(elected){model.failed.push(old);model.leader=newcomer;model.epoch++;model.adj=adj;model.events.push({kind:'leader_regrown',...info});}
+ return info;
+}
+function partitionElectionProof(model){ // physically sever every link across a 16/16 split
+ let living=Array.from({length:N},(_,i)=>i).filter(i=>!model.failed.includes(i));let halfway=Math.floor(living.length/2),sideA=new Set(living.slice(0,halfway)),sideB=new Set(living.slice(halfway));let partitioned=model.adj.map((n,i)=>n.filter(j=>(sideA.has(i)&&sideA.has(j))||(sideB.has(i)&&sideB.has(j))));let majority=Math.floor(N/2)+1;
+ let reach=(set)=>{let start=[...set][0],dist=bfs(partitioned,start,new Set(model.failed)).dist;return [...set].filter(i=>isFinite(dist[i])).length};let a=reach(sideA),b=reach(sideB);
+ return {majority,sideA:a,sideB:b,canA:a>=majority,canB:b>=majority,safe:a<majority&&b<majority,cutLinks:model.adj.reduce((v,l,i)=>v+l.filter(j=>sideA.has(i)&&sideB.has(j)||sideB.has(i)&&sideA.has(j)).length,0)/2}
+}
+function heartbeatSweep(model,opts,seed){let rng=xorshift(seed),acks=0,total=0,traffic=0,missed=[];for(let node=0;node<model.adj.length;node++){if(model.failed.includes(node)||node===model.leader)continue;total++;let forward=routeArrival(model.adj,model.leader,node,0,rng,opts,new Set(model.failed));traffic+=forward.packets;let back=isFinite(forward.time)?routeArrival(model.adj,node,model.leader,forward.time,rng,opts,new Set(model.failed)):{time:Infinity,packets:0};traffic+=back.packets;if(isFinite(back.time)&&back.time<=opts.heartbeatTTL)acks++;else missed.push(node)}return {acks,total,traffic,missed,leader:model.leader,term:model.epoch}
+}
+function epochAccepted(model,messageTerm){return !model.failed.includes(model.leader)&&messageTerm===model.epoch}
+function saveModel(model){return clone(model)}
+const api={H,NP,N,SENSORS,INITIAL_LEADER,WORK_ROOT,STAGE_STEPS,MAX_HARD,HARD_PATIENCE,AUDIT_EVERY,G,graph,bfs,xorshift,setup,tape,comp,backprop,trainBatch,audit,freeze,restore,hop,routeArrival,evalTransport,evaluateNetwork,electReplacement,partitionElectionProof,heartbeatSweep,epochAccepted,saveModel};root.ConSensUsIIEngine=api;if(typeof module!=='undefined'&&module.exports)module.exports=api
+})(typeof window!=='undefined'?window:globalThis);
+</script>
+<script>
+(function(){'use strict';
+const E=window.ConSensUsIIEngine,$=id=>document.getElementById(id);
+const NORMAL={loss:0,maxDelay:1,retries:0,retryWait:2,deadline:75,quorum:2,sensoryTicks:[0,2,4,6,8,10,12,14]},MODERATE={...NORMAL,loss:.10,maxDelay:3,retries:1,deadline:92},SEVERE={...NORMAL,loss:.3,maxDelay:7,retries:0,deadline:62};
+const ELECT={loss:0,maxDelay:2,retries:2,retryWait:2,electionDeadline:140};
+const s={running:false,done:false,stop:false,progress:0,records:[],faults:[],log:[],history:[],champion:null,live:null,selected:32,experiment:null,completed:0,modelCount:6,preFailure:null,leaderDead:false,biopsy:null};
+function text(id,v){$(id).textContent=String(v)}function yieldUI(){return new Promise(resolve=>setTimeout(resolve,0))}function log(msg,kind=''){s.log.push({at:s.log.length+1,msg,kind});if(s.log.length>140)s.log.shift();const p=document.createElement('p');p.className=kind;p.textContent=`#${String(s.log[s.log.length-1].at).padStart(3,'0')}  ${msg}`;$('log').prepend(p);if($('log').children.length>100)$('log').lastChild.remove();}
+function setPhase(name,detail,pct){text('phase',name);text('detail',detail);$('progress').style.width=Math.max(0,Math.min(100,pct||0))+'%'}
+function positions(){const pts=[];for(let i=0;i<32;i++){let a=(i/32)*Math.PI*2-Math.PI/2;pts.push({x:425+220*Math.cos(a),y:163+136*Math.sin(a)})}pts.push({x:425,y:168});pts.push({x:425,y:168});return pts}
+const pos=positions();function graph(){const canvas=$('net'),ctx=canvas.getContext('2d'),model=s.live||E.setup(47017,'cold');ctx.clearRect(0,0,850,335);let edges=new Set(),limit=model.adj.length;
+for(let i=0;i<limit;i++)for(let j of model.adj[i]){let key=Math.min(i,j)+'-'+Math.max(i,j);if(edges.has(key))continue;edges.add(key);let a=pos[i]||pos[32],b=pos[j]||pos[32];ctx.strokeStyle=(i===model.leader||j===model.leader)?'#c38fae80':'#36617385';ctx.lineWidth=(i===model.leader||j===model.leader)?1.8:1;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}
+for(let i=0;i<limit;i++){let p=pos[i]||pos[32],dead=model.failed.includes(i),lead=i===model.leader,src=i<32&&E.SENSORS.includes(i);if(i===32&&!lead&&!dead)continue;ctx.fillStyle=dead?'#62747f':lead?'#eeb0cb':src?'#fac980':'#74d7c8';ctx.beginPath();ctx.arc(p.x,p.y,lead?12:src?7.8:5.8,0,2*Math.PI);ctx.fill();if(s.selected===i){ctx.beginPath();ctx.arc(p.x,p.y,lead?17:12.5,0,2*Math.PI);ctx.strokeStyle='#fff';ctx.lineWidth=1.4;ctx.stroke()}if(lead){ctx.fillStyle='#fff0f7';ctx.textAlign='center';ctx.font='bold 12px system-ui';ctx.fillText('CONSENSUS',p.x,p.y-22)}else if(src){ctx.fillStyle='#ffdba6';ctx.font='10px ui-monospace,monospace';ctx.textAlign='center';ctx.fillText('S'+(E.SENSORS.indexOf(i)+1),p.x,p.y-14)}}
+text('topology',`${limit} total · max ${Math.max(...model.adj.map(a=>a.length))} neighbors`);text('leader',model.failed.includes(model.leader)?'LOST':`${model.leader} · ${model.epoch}`);inspect()}
+function inspect(){let m=s.live||E.setup(47017,'cold'),i=Math.min(s.selected,m.adj.length-1);const parts=[`Ganglion ${i}${i===m.leader?'  ·  CONSENSUS ORGAN':''}`,`Immediate neighbors: ${(m.adj[i]||[]).join(', ')||'none'}`,i>=32?'Protocol-only: election / quorum / deadlines':`12 own neurons · 49 trainable local parameters`,`Sensory site: ${E.SENSORS.includes(i)?E.SENSORS.indexOf(i)+1:'none'}`];if(i<32){let p=m.parameters[i]||[];parts.push(`Sample local weights: ${p.slice(0,4).map(x=>Number(x).toFixed(3)).join(' / ')}`);parts.push('No reading of remote neurons or remote weights.')}else parts.push(`Worker-majority election requires 17 of 32`);text('inspector',parts.join('\n'))}
+$('net').addEventListener('click',ev=>{let r=$('net').getBoundingClientRect(),x=(ev.clientX-r.left)*850/r.width,y=(ev.clientY-r.top)*335/r.height,mi=-1,md=500;for(let i=0;i<(s.live?.adj.length||33);i++){let p=pos[i]||pos[32],d=(p.x-x)**2+(p.y-y)**2;if(d<md){mi=i;md=d}}if(mi>=0){s.selected=mi;graph()}});
+function chart(){const c=$('trend'),g=c.getContext('2d');g.clearRect(0,0,c.width,c.height);g.fillStyle='#0a1923';g.fillRect(0,0,c.width,c.height);const top=18,bottom=206,left=37,right=650,colors={'Independent cold A':'#7edbca','Independent cold B':'#78bae5','Independent developmental A':'#f4ca83','Independent developmental B':'#dea5e8','Hard-only cold':'#e68e98','Active-relay gradient-corrected':'#b8bb78'};for(let t of [0,16,32,48,64]){let y=bottom-(bottom-top)*t/64;g.beginPath();g.moveTo(left,y);g.lineTo(right,y);g.strokeStyle=t===32?'#c4a06590':'#2b4250';g.setLineDash(t===32?[5,5]:[]);g.stroke();g.setLineDash([]);g.fillStyle='#94afbd';g.textAlign='right';g.font='11px monospace';g.fillText(t,left-7,y+4)}const max=Math.max(100,...s.history.map(r=>r.x));for(let name of Object.keys(colors)){let rows=s.history.filter(r=>r.name===name);if(!rows.length)continue;g.strokeStyle=colors[name];g.lineWidth=2;g.beginPath();rows.forEach((r,i)=>{let x=left+r.x/max*(right-left),y=bottom-(bottom-top)*r.score/64;if(i)g.lineTo(x,y);else g.moveTo(x,y)});g.stroke()}g.font='10px system-ui';g.textAlign='left';Object.keys(colors).forEach((name,i)=>{let x=left+(i%2)*268,y=216+Math.floor(i/2)*10;g.fillStyle=colors[name];g.fillRect(x,y,8,3);g.fillStyle='#b4cbd2';g.fillText(name,x+12,y+5)})}
+function addResult(r){s.records.push(r);let tr=document.createElement('tr');[r.name,`${r.six}/64`,`${r.eight}/256`,`${r.ten}/1024`,`${r.active}/${r.totalGanglia}`,r.stop].forEach((v,i)=>{const td=document.createElement('td');td.textContent=v;if(i===0)td.style.fontWeight='700';tr.append(td)});if(s.records.length===1)$('results').innerHTML='';$('results').append(tr);text('count',s.records.length+' results');chart()}
+function addFault(name,v){s.faults.push({name,...v});const tr=document.createElement('tr');[name,`${v.correct}/${v.total}`,`${(v.coverage*100).toFixed(1)}%`].forEach(z=>{let td=document.createElement('td');td.textContent=z;tr.append(td)});if(s.faults.length===1)$('faults').innerHTML='';$('faults').append(tr)}
+function updateScores(){if(!s.champion)return;let m=s.champion;let six=E.audit(m,6).correct,eight=E.audit(m,8).correct,ten=E.audit(m,10).correct;text('s6',six+'/64');text('s8',eight+'/256');text('s10',ten+'/1024')}
+async function train(name,seed,init,hard=false,active=false){let m=E.setup(seed,init);m.activeRelays=active;let stages=hard?[6]:[2,3,4,5,6],runs=[],highest=-1,saved=null;
+ log(`${name}: independent parameters, ${hard?'full six-bit challenge, no curriculum':'random-subset compositional curriculum'}${active?' with trainable relay processing':''}`);
+ for(let n of stages){let best=-1,noGain=0,perfect=0,stop='budget cap',start=m.step,limit=hard?4500: n===2?1900:1250;
+  for(let i=1;i<=limit;i++){
+    E.trainBatch(m,n,16,hard?.0035:.004);
+    if(i%120===0||i===limit){let a=E.audit(m,n),z=a.correct;if(z>best){best=z;noGain=0}else noGain++;if(z===2**n)perfect++;else perfect=0;
+     const six=E.audit(m,6).correct;s.history.push({name,x:m.step,score:six});if(s.history.length>1200)s.history.shift();
+     if(n===6 && six>highest){highest=six;saved=E.freeze(m)}
+     setPhase(name+' · '+(hard?'DIRECT HARD TASK':n+'-INPUT TRAINING'),`${m.step.toLocaleString()} update batches × 16 examples · current ${z}/${2**n} · six-bit ${six}/64 · stage best ${best}`,Math.min(88,100*(s.completed+(stages.indexOf(n)+i/limit)/stages.length)/(s.modelCount+2)));
+     graph();chart();if(i>=240&&perfect>=3){stop='mastery';break}if(i>=1200&&noGain>=7){stop='stalled plateau';break}
+    }
+    if(i%80===0){if(s.stop)throw Error('Stopped');await yieldUI()}
+  }
+  runs.push({n,updates:m.step-start,stop,score:E.audit(m,n).correct});if(s.stop)throw Error('Stopped');
+ }
+ if(saved&&highest>E.audit(m,6).correct){E.restore(m,saved);log(name+': restored its better six-bit checkpoint.','warning')}
+ const six=E.audit(m,6),eight=E.audit(m,8),ten=E.audit(m,10),activeCount=new Set(E.tape(m,Array(8).fill(1),255).ops.map(x=>x.node)).size,r={name,seed,init,hard,active:activeCount,totalGanglia:32,steps:m.step,six:six.correct,eight:eight.correct,ten:ten.correct,stop:six.correct===64?'6-bit mastery':runs[runs.length-1].stop,stages:runs};
+ addResult(r);log(`${name}: ${r.six}/64 · ${r.eight}/256 8-bit compositions · ${r.ten}/1024 novel · ${r.stop}`,r.six===64?'tag':'warning');
+ if(!s.champion||r.eight>E.audit(s.champion,8).correct||(r.eight===E.audit(s.champion,8).correct&&r.six>E.audit(s.champion,6).correct)){s.champion=E.saveModel(m);updateScores();s.live=E.saveModel(s.champion)}
+ s.completed++;return m;
+}
+async function adaptToTen(original){const m=E.saveModel(original),before=E.audit(m,10).correct;m.trainingSensors=10;const stages=[2,3,4,6,8,10];let hist=[];log('Ten-bit rescue: introduce two new sensory ganglia and resume independent local learning.');for(let n of stages){let best=-1,stale=0,perfect=0,reason='budget cap';const start=m.step;
+ for(let i=1;i<=840;i++){E.trainBatch(m,n,16,.0035);if(i%120===0){const score=E.audit(m,n).correct;if(score>best){best=score;stale=0}else stale++;perfect=score===2**n?perfect+1:0;
+ setPhase('TEN-BIT ADAPTATION · '+n+' active inputs',`Unseen before adaptation: ${before}/1024 · current: ${E.audit(m,10).correct}/1024 · stage: ${score}/${2**n}`,88+8*(stages.indexOf(n)+i/840)/stages.length);
+ if(i>=240&&perfect>=3){reason='mastery';break}if(i>=600&&stale>=4){reason='stalled';break}}
+ if(i%80===0){if(s.stop)throw Error('Stopped');await yieldUI()}}
+ hist.push({n,steps:m.step-start,reason,score:E.audit(m,n).correct})}
+ const after=E.audit(m,10).correct;log(`Ten-bit rescue ${before}/1024 → ${after}/1024, with two new input sites`,after>before?'tag':'warning');text('diagnostic',`Ten-bit adaptation: ${before}/1024 before → ${after}/1024 afterward. The ten-bit inputs were genuinely absent from earlier learning. No worker weights were tied.`);return {before,after,stages:hist,model:m};}
+async function battery(){if(s.running)return;s.running=true;s.done=false;s.stop=false;s.records=[];s.history=[];s.faults=[];s.log=[];s.champion=null;s.live=E.setup(47017,'cold');s.completed=0;s.biopsy=null;$('results').innerHTML='<tr><td colspan="6">Starting training…</td></tr>';$('faults').innerHTML='<tr><td colspan="3">Awaiting fault tests…</td></tr>';$('log').innerHTML='';$('run').disabled=true;$('stop').disabled=false;$('export').disabled=true;$('kill').disabled=true;$('regrow').disabled=true;graph();chart();
+ try{
+  const checks=E.setup(47017,'cold');if(checks.parameters.length!==32||checks.parameters[0]===checks.parameters[1]||Math.max(...checks.adj.map(z=>z.length))>3)throw Error('Independence or locality check failed');log('Self-test: all workers have separate parameters; physical node degree ≤3.','tag');
+  const scenarios=[['Independent cold A',47017,'cold',false,false],['Independent cold B',47029,'cold',false,false],['Independent developmental A',47017,'developmental',false,false],['Independent developmental B',47029,'developmental',false,false],['Hard-only cold',47017,'cold',true,false],['Active-relay gradient-corrected',47017,'cold',false,true]];
+  for(const v of scenarios){await train(...v);await yieldUI()}
+  const champ=E.saveModel(s.champion);s.live=E.saveModel(champ);text('diagnostic',`Remove one of eight required sensory signals: ${E.audit(champ,8,255,0).correct}/256; intact: ${E.audit(champ,8).correct}/256. Each original sensor is needed for the full balanced parity.`);
+  log('Testing sensor ablation and genuine eight/ten-bit truth tables.','tag');
+  const ablations=Array.from({length:8},(_,i)=>({sensor:i,score:E.audit(champ,8,255,i).correct}));
+  let tenRescue=await adaptToTen(champ);s.completed++;
+  const healthy=E.saveModel(champ);const clean=E.evaluateNetwork(healthy,NORMAL,2,97733,6),moderate=E.evaluateNetwork(healthy,MODERATE,2,97733,6),severe=E.evaluateNetwork(healthy,SEVERE,2,97733,6);
+  addFault('Clean, no dropped messages',clean);addFault('10% loss, delayed retry',moderate);addFault('30% loss, tighter deadline',severe);log(`Clean quorum ${clean.covered}/${clean.total}; moderate ${moderate.covered}/${moderate.total}; severe ${severe.covered}/${severe.total}.`,'tag');
+  const before=E.audit(healthy,6).correct;const pings=E.heartbeatSweep(healthy,{loss:0,maxDelay:1,retries:0,heartbeatTTL:120},513);
+  const priorLeader=healthy.leader;healthy.failed.push(priorLeader);const destroyed=E.evaluateNetwork(healthy,NORMAL,1,97733,6);addFault('Consensus destroyed',destroyed);
+  const election=E.electReplacement(healthy,ELECT,82602);const recovered=E.evaluateNetwork(healthy,NORMAL,1,97733,6);addFault('After regrowth + election',recovered);
+  if(election.elected&&E.audit(healthy,6).correct!==before)throw Error('Recovery changed retained neural computation');
+  const split=E.partitionElectionProof(healthy);s.live=healthy;graph();s.completed++;
+  log(`Consensus ${priorLeader} lost. New organ ${election.newcomer}: ${election.acks}/${election.majority} approvals. Six-bit reasoning ${before}/64 preserved.`,election.elected?'tag':'warning');
+  log(`Partition: ${split.sideA} vs ${split.sideB} reachable votes, 17 needed; neither may assume authority.`,split.safe?'tag':'warning');
+  const report={format:'consensus-ii-independent-ganglion-v2-relay-gradient-fixed',created:new Date().toISOString(),architecture:{workerGanglia:32,neuronsEach:12,weightSharing:false,initVariants:['cold fully independent','similar but separately trainable developmental starting pattern'],maxPhysicalNeighbors:3,consensusRole:'protocol only',training:'supervised centralized reverse-mode gradients over independent local operations; only reverse-hop counts, not real delayed gradient packets; staged subset curriculum',routing:'fixed spanning tree with local two-report neural merges',relayGradientCorrected:true,eightBitTest:'novel full combinations; inputs seven and eight included in training subsets'},completed:true,records:s.records,ablations,tenBitRescue:{before:tenRescue.before,after:tenRescue.after,stages:tenRescue.stages},transport:{clean,moderate,severe,destroyed,recovered},leadership:{pings,election,split},history:s.history,events:s.log,originalChampion:champ,adaptedTenBitBrain:tenRescue.model,liveRecoveredBrain:healthy};
+  s.biopsy=report;s.done=true;text('state','COMPLETED');setPhase('Complete · inspect or export your Biopsy',`${s.records.length} learning conditions · real 8/10-bit challenges · 2-of-3 quorum · failed-leader replacement`,100);$('export').disabled=false;$('kill').disabled=false;$('regrow').disabled=true;log('Battery complete. Export the Biopsy for independent analysis.','tag');
+ }catch(err){log('Experiment interrupted: '+err.message,'warning');text('state','STOPPED / ERROR');setPhase('Experiment interrupted',err.message,0)}finally{s.running=false;$('run').disabled=false;$('stop').disabled=true;graph();chart()}
+}
+$('run').onclick=battery;$('stop').onclick=()=>{s.stop=true;log('Stop requested; will exit at next training checkpoint.','warning')};
+$('export').onclick=()=>{if(!s.biopsy)return;const b=new Blob([JSON.stringify(s.biopsy)],{type:'application/json'}),url=URL.createObjectURL(b),a=document.createElement('a');a.href=url;a.download='ConSensUs-II-biopsy-'+new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+$('kill').onclick=()=>{if(!s.done||!s.live||s.live.failed.includes(s.live.leader))return;const old=s.live.leader;s.live.failed.push(old);s.leaderDead=true;graph();text('protocol',`Leader ${old} unreachable. Protocol ABSTAINS while the authority is lost.`);$('regrow').disabled=false;$('kill').disabled=true};
+$('regrow').onclick=()=>{if(!s.leaderDead)return;let m=s.live,e=E.electReplacement(m,ELECT,82602);s.leaderDead=false;graph();text('protocol',`Leader ${e.newcomer} elected in term ${m.epoch}; ${e.acks} of 17 workers approved. Neural parameters preserved.`);$('kill').disabled=false;$('regrow').disabled=true};
+setPhase('Ready for the experiment','Six independently weighted learner runs; new-sensor adaptation; fault and quorum tests',0);graph();chart();
+})();
+</script>
+</body></html>

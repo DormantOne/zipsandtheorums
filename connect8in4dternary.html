@@ -1,0 +1,2442 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connect 8 in 4D: eight in a row on an 11x11x11x11 board</title>
+<meta name="description" content="Connect eight in four dimensions with a touching rule instead of gravity, against bots that evolve by self-play.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #EDF1F2;
+  --surface: #F8FAFA;
+  --surface-2: #E1E8EA;
+  --line: #CAD4D7;
+  --line-strong: #93A5AB;
+  --ink: #12232A;
+  --ink-2: #44585F;
+  --ink-3: #5C6F75;
+  --accent: #087268;
+  --accent-ink: #FFFFFF;
+  --accent-soft: rgba(8, 114, 104, 0.13);
+  --danger: #B3261E;
+  --ok: #1D6E3A;
+  --focus: #0B57D0;
+  --d1: #B86200; --d2: #1A6FA8; --d3: #007A57; --d4: #7A6A00;
+  --d5: #2445A8; --d6: #B63E13; --d7: #9C3F79; --d8: #4C5C62;
+  --ax-x: #0F7591; --ax-y: #A1328F; --ax-z: #2B7F44; --ax-w: #A8670E;
+  --p1: #D97000; --p2: #1F6FB8;
+  --font: "Recursive", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --casual: "CASL" 1, "MONO" 0;
+  --linear: "CASL" 0, "MONO" 0;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #0C1A20;
+    --surface: #11232B;
+    --surface-2: #183039;
+    --line: #23414B;
+    --line-strong: #3C6271;
+    --ink: #E2EDEF;
+    --ink-2: #A6BDC3;
+    --ink-3: #849EA5;
+    --accent: #5FE3CD;
+    --accent-ink: #062A26;
+    --accent-soft: rgba(95, 227, 205, 0.15);
+    --danger: #FF8A7A;
+    --ok: #7EE29A;
+    --focus: #8AB4F8;
+    --d1: #F0A830; --d2: #62BEF0; --d3: #3CCB98; --d4: #EFE15A;
+    --d5: #7FA2FF; --d6: #F08350; --d7: #E094C4; --d8: #C8D3D6;
+    --ax-x: #63CDE9; --ax-y: #E47FD6; --ax-z: #74D892; --ax-w: #F4B84A;
+    --p1: #F5A33B; --p2: #5AAEF0;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-variation-settings: var(--linear);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------- header ---------- */
+.top {
+  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
+  gap: 12px 32px; padding: 18px 28px 0; max-width: 1360px; margin: 0 auto;
+}
+.brand h1 {
+  margin: 0; font-size: 32px; line-height: 1.05; font-weight: 820;
+  font-variation-settings: var(--casual); letter-spacing: -0.015em;
+}
+.brand p { margin: 4px 0 12px; color: var(--ink-2); font-size: 14px; }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.tabs button {
+  border: 0; background: none; padding: 10px 14px 12px; cursor: pointer; color: var(--ink-2);
+  font-size: 15px; font-weight: 560; border-bottom: 3px solid transparent;
+}
+.tabs button:hover { color: var(--ink); }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+.rule { height: 1px; background: var(--line); }
+
+main { max-width: 1360px; margin: 0 auto; padding: 22px 28px 56px; }
+[hidden] { display: none !important; }
+
+/* ---------- generic controls ---------- */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line-strong);
+  background: transparent; font-size: 14px; font-weight: 600; white-space: nowrap;
+}
+.btn:hover:not(:disabled) { background: var(--surface-2); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.btn-primary:hover:not(:disabled) { background: var(--ink-2); border-color: var(--ink-2); }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 2px; border: 1px solid var(--line-strong); border-radius: 8px; }
+.seg label { position: relative; cursor: pointer; }
+.seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.seg span { display: block; padding: 5px 11px; border-radius: 6px; font-size: 13.5px; font-weight: 560; color: var(--ink-2); }
+.seg input:checked + span { background: var(--ink); color: var(--bg); }
+.seg input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: 1px; }
+.seg input:disabled + span { opacity: 0.4; cursor: not-allowed; }
+.seg label:hover input:not(:checked):not(:disabled) + span { color: var(--ink); background: var(--surface-2); }
+fieldset.pick { border: 0; margin: 0; padding: 0; min-width: 0; }
+fieldset.pick legend { font-size: 13px; color: var(--ink-3); margin-bottom: 5px; padding: 0; }
+.toggle { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; cursor: pointer; color: var(--ink-2); }
+.toggle input { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; }
+.slider { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--ink-2); }
+.slider input[type="range"] { width: 88px; accent-color: var(--accent); }
+select { background: var(--surface); border: 1px solid var(--line-strong); border-radius: 6px; padding: 3px 6px; font-size: 13px; }
+.status { margin: 0; min-height: 1.45em; color: var(--ink-2); font-size: 14px; }
+.status.good { color: var(--ok); }
+.status.bad { color: var(--danger); }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+h2 { font-variation-settings: var(--casual); font-size: 24px; line-height: 1.2; margin: 0 0 8px; font-weight: 760; }
+h3 { font-size: 16px; margin: 0; font-weight: 680; }
+.lede { color: var(--ink-2); max-width: 68ch; margin: 0 0 16px; }
+
+/* ---------- solve ---------- */
+.stage { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 18px; align-items: start; }
+.view { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.canvas-wrap { position: relative; }
+.canvas-wrap canvas { display: block; width: 100%; }
+.tess-wrap { aspect-ratio: 1 / 1; max-height: 640px; touch-action: none; }
+.tess-wrap canvas { height: 100%; cursor: grab; }
+.tess-wrap canvas.dragging { cursor: grabbing; }
+.legend-rays { position: absolute; left: 12px; bottom: 10px; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--ink-2); pointer-events: none; }
+.legend-rays i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+.zoom { position: absolute; right: 10px; top: 10px; display: flex; gap: 6px; }
+.zoom button { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line-strong); background: var(--surface); cursor: pointer; font-size: 17px; line-height: 1; padding: 0; }
+.view-bar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line); }
+.view-head { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.board-wrap { padding: 12px 14px 6px; }
+#boards { cursor: pointer; border-radius: 4px; }
+.pad { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 14px 8px; }
+.pad button { min-width: 38px; height: 36px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface); cursor: pointer; font-size: 16px; font-weight: 720; font-variant-numeric: tabular-nums; }
+.pad button:hover:not(:disabled) { background: var(--surface-2); }
+.pad button:disabled { opacity: 0.35; cursor: not-allowed; }
+.pad .clear { font-size: 13.5px; font-weight: 600; padding: 0 12px; color: var(--ink-2); }
+.hint { margin: 0; padding: 4px 14px 12px; font-size: 12.5px; color: var(--ink-3); }
+
+.col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.controls { display: flex; flex-direction: column; gap: 14px; padding: 2px 2px 0; }
+.transport { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+.readouts { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px 14px; margin: 0; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.readouts div { min-width: 0; }
+.readouts dt { font-size: 12.5px; color: var(--ink-3); }
+.readouts dd { margin: 1px 0 0; font-size: 19px; font-weight: 640; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.inspector { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.insp-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; align-items: baseline; }
+.insp-head p { margin: 0; font-size: 13px; color: var(--ink-3); }
+#traces { display: block; width: 100%; height: 150px; margin-top: 10px; }
+.digit-bars { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px 14px; margin-top: 10px; }
+.dbar { font-size: 12.5px; color: var(--ink-2); }
+.dbar .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.dbar .tau { display: block; margin-top: 3px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.dbar b { font-weight: 760; font-size: 14px; }
+.dbar .track { height: 6px; border-radius: 3px; background: var(--surface-2); margin-top: 4px; overflow: hidden; }
+.dbar .fill { height: 100%; border-radius: 3px; }
+
+/* ---------- evolve ---------- */
+.evo-top { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px 40px; align-items: start; }
+.evo-controls { display: flex; flex-direction: column; gap: 12px; }
+.evo-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px 14px; margin: 18px 0; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.evo-stats dt { font-size: 12.5px; color: var(--ink-3); }
+.evo-stats dd { margin: 1px 0 0; font-size: 18px; font-weight: 640; font-variant-numeric: tabular-nums; }
+.evo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.card { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.card figcaption { font-weight: 680; font-size: 15px; }
+.card .sub { margin: 2px 0 8px; font-size: 13px; color: var(--ink-3); }
+.card canvas { display: block; width: 100%; }
+.keys { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12.5px; color: var(--ink-2); margin-top: 6px; }
+.keys i { display: inline-block; width: 16px; height: 0; border-top: 2px solid; margin-right: 6px; vertical-align: middle; }
+.keys i.dash { border-top-style: dashed; }
+.keys i.dot { width: 7px; height: 7px; border: 0; border-radius: 50%; }
+.genes { list-style: none; counter-reset: gene; margin: 10px 0 0; padding: 0; columns: 2; column-gap: 20px; font-size: 12.5px; }
+.genes li { counter-increment: gene; display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; break-inside: avoid; color: var(--ink-2); }
+.genes li::before { content: counter(gene); color: var(--ink-3); min-width: 1.6em; }
+.genes li span:first-of-type { flex: 1; }
+.genes li .v { font-variant-numeric: tabular-nums; color: var(--ink); }
+.genes li .d { font-variant-numeric: tabular-nums; min-width: 4.2em; text-align: right; }
+.up { color: var(--ax-w); }
+.down { color: var(--ax-x); }
+.evo-actions { margin-top: 18px; }
+
+/* ---------- build ---------- */
+.build-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px 40px; align-items: start; }
+.build-form { display: flex; flex-direction: column; gap: 20px; }
+.build-form fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.build-form legend { font-weight: 680; font-size: 15px; margin-bottom: 8px; padding: 0; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(116px, 1fr)); gap: 8px; }
+.cards label { position: relative; display: block; cursor: pointer; }
+.cards input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.cards .face { display: block; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 8px; height: 100%; }
+.cards .face strong { display: block; font-size: 18px; font-weight: 740; font-variation-settings: var(--casual); }
+.cards .face small { display: block; color: var(--ink-3); font-size: 12.5px; margin-top: 2px; }
+.cards input:checked + .face { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); background: var(--surface); }
+.cards input:focus-visible + .face { outline: 2px solid var(--focus); outline-offset: 2px; }
+.cards input:disabled + .face { opacity: 0.4; cursor: not-allowed; }
+.note { font-size: 13px; color: var(--ink-3); margin: 8px 0 0; }
+progress { width: 100%; height: 8px; accent-color: var(--accent); }
+.blueprint { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+.blueprint dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 8px 0 18px; font-size: 14px; }
+.blueprint dt { color: var(--ink-3); }
+.blueprint dd { margin: 0; font-variant-numeric: tabular-nums; }
+textarea { width: 100%; background: var(--bg); border: 1px solid var(--line-strong); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; font-variation-settings: "MONO" 1; resize: vertical; word-break: break-all; margin: 8px 0 10px; }
+
+/* ---------- arena ---------- */
+table.results { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.results th, .results td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.results th { font-size: 12.5px; color: var(--ink-3); font-weight: 600; }
+.results td { font-variant-numeric: tabular-nums; }
+.results tr:last-child td { border-bottom: 0; }
+.results .kind { color: var(--ink-3); font-size: 12.5px; display: block; }
+.results .yes { color: var(--ok); font-weight: 640; }
+.results .no { color: var(--danger); font-weight: 640; }
+.bar { display: inline-block; vertical-align: middle; width: 70px; height: 6px; border-radius: 3px; background: var(--surface-2); margin-left: 8px; overflow: hidden; }
+.bar b { display: block; height: 100%; background: var(--accent); }
+
+/* ---------- guide ---------- */
+.guide { max-width: 72ch; }
+.guide h2 { margin-top: 28px; }
+.guide h2:first-child { margin-top: 0; }
+.guide p, .guide li { color: var(--ink-2); line-height: 1.62; }
+.guide strong { color: var(--ink); }
+.eq { margin: 14px 0; padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; font-size: 15.5px; color: var(--ink); overflow-x: auto; white-space: nowrap; }
+.eq var { font-style: italic; }
+.guide dl { display: grid; grid-template-columns: minmax(150px, auto) 1fr; gap: 6px 18px; }
+.guide dt { color: var(--ink); font-weight: 620; }
+.guide dd { margin: 0; color: var(--ink-2); }
+
+@media (max-width: 1020px) {
+  .stage, .evo-top, .build-grid { grid-template-columns: minmax(0, 1fr); }
+  .col { display: contents; }
+  #fig-tess { order: 1; } #fig-boards { order: 2; } .controls { order: 3; } .readouts { order: 4; } .inspector { order: 5; }
+  .tess-wrap { max-height: 460px; }
+}
+@media (max-width: 720px) {
+  .top { padding: 14px 16px 0; }
+  main { padding: 16px 16px 48px; }
+  .brand h1 { font-size: 26px; }
+  .evo-grid { grid-template-columns: minmax(0, 1fr); }
+  .genes { columns: 1; }
+  .tabs { gap: 0; }
+  .tabs button { padding: 8px 8px 10px; font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto !important; transition: none !important; }
+}
+
+/* ---------- connect 8 additions ---------- */
+.stone { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 6px; }
+.stone.p1 { background: var(--p1); } .stone.p2 { background: var(--p2); }
+.legend-play { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12.5px; color: var(--ink-2); padding: 0 14px 12px; }
+.legend-play i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.legend-play .legal { width: 6px; height: 6px; background: var(--accent); vertical-align: 1px; }
+.legend-play .ring { border: 2px solid var(--danger); width: 12px; height: 12px; }
+.legend-play .door { border: 2px dashed var(--danger); width: 12px; height: 12px; }
+.turn { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 650; }
+.turn .stone { width: 16px; height: 16px; margin: 0; }
+.setup { display: grid; gap: 12px; }
+.setup .row { gap: 10px 16px; }
+.tbl { border-collapse: collapse; font-size: 14px; margin: 10px 0 4px; }
+.tbl th, .tbl td { text-align: left; padding: 6px 14px 6px 0; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.tbl th { color: var(--ink-3); font-weight: 600; font-size: 12.5px; }
+.weights { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
+.weights li { display: grid; grid-template-columns: minmax(150px, 1.2fr) minmax(80px, 2fr) 5em; gap: 10px; align-items: center; color: var(--ink-2); }
+.weights .track { height: 7px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.weights .fill { height: 100%; border-radius: 4px; }
+.weights .v { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); }
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1>Connect 8 in 4D</h1>
+    <p id="subline">Building the board</p>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" id="tab-play" aria-controls="panel-play" aria-selected="true">Play</button>
+    <button role="tab" id="tab-evolve" aria-controls="panel-evolve" aria-selected="false" tabindex="-1">Evolve</button>
+    <button role="tab" id="tab-rules" aria-controls="panel-rules" aria-selected="false" tabindex="-1">Rules</button>
+  </nav>
+</header>
+<div class="rule"></div>
+
+<main>
+  <!-- ================= PLAY ================= -->
+  <section id="panel-play" role="tabpanel" aria-labelledby="tab-play">
+    <div class="stage">
+      <div class="col">
+        <figure class="view" id="fig-tess">
+          <div class="canvas-wrap tess-wrap" id="tess-wrap">
+            <canvas id="tess" role="img" aria-label="Projection of the four-dimensional board. Drag to orbit. Click a small dot to play there."></canvas>
+            <div class="zoom">
+              <button type="button" id="zoom-in" aria-label="Zoom in">+</button>
+              <button type="button" id="zoom-out" aria-label="Zoom out">&minus;</button>
+            </div>
+          </div>
+          <div class="view-bar">
+            <label class="toggle"><input type="checkbox" id="tumble"> Tumble through 4D</label>
+            <label class="slider">XW <input type="range" id="rot-xw" min="-3.14" max="3.14" step="0.01" aria-label="Rotation in the XW plane"></label>
+            <label class="slider">YW <input type="range" id="rot-yw" min="-3.14" max="3.14" step="0.01" aria-label="Rotation in the YW plane"></label>
+            <label class="slider">ZW <input type="range" id="rot-zw" min="-3.14" max="3.14" step="0.01" aria-label="Rotation in the ZW plane"></label>
+          </div>
+        </figure>
+
+        <div class="controls">
+          <div class="turn" id="turn"><span class="stone p1"></span><span id="turn-text">Starting</span></div>
+          <p class="status" id="status" role="status" aria-live="polite"></p>
+          <div class="transport">
+            <button type="button" class="btn btn-primary" id="btn-new">New game</button>
+            <button type="button" class="btn" id="btn-undo">Undo</button>
+            <button type="button" class="btn" id="btn-hint">Hint</button>
+            <button type="button" class="btn" id="btn-pause" hidden>Pause</button>
+            <label class="slider" id="speed-wrap" hidden>Speed <input type="range" id="speed" min="1" max="10" value="6"></label>
+          </div>
+          <div class="setup">
+            <fieldset class="pick">
+              <legend>Players</legend>
+              <div class="seg" role="radiogroup" aria-label="Players">
+                <label><input type="radio" name="mode" value="human-first" checked><span>You move first</span></label>
+                <label><input type="radio" name="mode" value="bot-first"><span>Bot moves first</span></label>
+                <label><input type="radio" name="mode" value="bots"><span>Watch two bots</span></label>
+                <label><input type="radio" name="mode" value="hotseat"><span>Two people</span></label>
+              </div>
+            </fieldset>
+            <fieldset class="pick" id="brain-pick">
+              <legend id="brain-legend">Opponent</legend>
+              <div class="seg" role="radiogroup" aria-label="Opponent">
+                <label><input type="radio" name="brain" value="naive"><span>Untrained</span></label>
+                <label><input type="radio" name="brain" value="tuned"><span>Hand-tuned</span></label>
+                <label><input type="radio" name="brain" value="evolved"><span>Evolved weights</span></label>
+                <label><input type="radio" name="brain" value="ternary" checked><span id="tern-label">Ternary champion</span></label>
+                <label><input type="radio" name="brain" value="mine" disabled><span id="mine-label">Your champion</span></label>
+              </div>
+            </fieldset>
+            <fieldset class="pick" id="brain2-pick" hidden>
+              <legend>Blue bot</legend>
+              <div class="seg" role="radiogroup" aria-label="Blue bot">
+                <label><input type="radio" name="brain2" value="naive"><span>Untrained</span></label>
+                <label><input type="radio" name="brain2" value="tuned" checked><span>Hand-tuned</span></label>
+                <label><input type="radio" name="brain2" value="evolved"><span>Evolved weights</span></label>
+                <label><input type="radio" name="brain2" value="ternary"><span id="tern-label2">Ternary champion</span></label>
+                <label><input type="radio" name="brain2" value="mine" disabled><span id="mine-label2">Your champion</span></label>
+              </div>
+            </fieldset>
+            <fieldset class="pick">
+              <legend>Stones in a row to win</legend>
+              <div class="seg" role="radiogroup" aria-label="Stones in a row to win">
+                <label><input type="radio" name="k" value="5"><span>5</span></label>
+                <label><input type="radio" name="k" value="6"><span>6</span></label>
+                <label><input type="radio" name="k" value="7"><span>7</span></label>
+                <label><input type="radio" name="k" value="8" checked><span>8</span></label>
+              </div>
+            </fieldset>
+            <p class="note" id="setup-note">Changes apply when you start a new game.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <figure class="view" id="fig-boards">
+          <div class="view-head">
+            <div class="seg" role="radiogroup" aria-label="Slice layout">
+              <label><input type="radio" name="layout" value="all" checked><span>All slices</span></label>
+              <label><input type="radio" name="layout" value="one"><span>One slice</span></label>
+            </div>
+            <div class="row" id="slice-pick" hidden>
+              <label class="slider">z <select id="pick-z" aria-label="Slice z"></select></label>
+              <label class="slider">w <select id="pick-w" aria-label="Slice w"></select></label>
+            </div>
+            <label class="toggle"><input type="checkbox" id="show-danger" checked> Mark threats and doors</label>
+          </div>
+          <div class="board-wrap" id="boards-wrap">
+            <canvas id="boards" tabindex="0" aria-label="Board slices around the cluster. Arrow keys move within a slice, Shift with arrow keys moves between slices along z and w, Enter plays." aria-describedby="cell-readout"></canvas>
+          </div>
+          <div class="legend-play" aria-hidden="true">
+            <span><i style="background:var(--p1)"></i>Orange</span>
+            <span><i style="background:var(--p2)"></i>Blue</span>
+            <span><i class="legal"></i>Playable</span>
+            <span><i class="ring"></i>Wins next move</span>
+            <span><i class="door"></i>Door: touching it opens a win</span>
+          </div>
+          <p class="hint" id="board-hint">Only the region around the cluster is shown. Slices are laid out by z across and w down; inside each slice x runs across and y runs down.</p>
+        </figure>
+        <dl class="readouts">
+          <div><dt>Move</dt><dd id="r-move">0</dd></div>
+          <div><dt>Playable cells</dt><dd id="r-legal">1</dd></div>
+          <div><dt>Longest orange line</dt><dd id="r-l1">0</dd></div>
+          <div><dt>Longest blue line</dt><dd id="r-l2">0</dd></div>
+          <div><dt>Bot thinking</dt><dd id="r-think">&ndash;</dd></div>
+        </dl>
+      </div>
+    </div>
+    <p class="sr-only" id="cell-readout" aria-live="polite"></p>
+  </section>
+
+  <!-- ================= EVOLVE ================= -->
+  <section id="panel-evolve" role="tabpanel" aria-labelledby="tab-evolve" hidden>
+    <div class="evo-top">
+      <div>
+        <h2>Ternary champions</h2>
+        <p class="lede">This tab uses the learning routine from Walker Precision Champions. Each brain is 16, 32 or 64 identical ternary protoneurons with no layers: every unit has three input slots weighted &minus;1, 0 or +1, reads sensors or any unit (itself included), and outputs &minus;1, 0 or +1. Six units vote on how strongly to promote or demote each candidate move. The bot&rsquo;s tactics stay fixed. Nothing is differentiated, so there are no gradients anywhere.</p>
+        <p class="lede">Six independent founders start the run. Each generation, 10 candidates play the same games. Four of them are mirrored precision probes: pairs of brains that nudge hidden float shadows of the ternary genes in opposite directions, so the better one teaches its parent. The rest are mutants of the current brain or of a champion, some crossed with a second champion. A candidate replaces the current brain only if it beats it on those games. Every other generation, brains face a fixed validation suite and an archive keeps the best brain for each style of play.</p>
+      </div>
+      <div class="evo-controls">
+        <div class="row">
+          <button type="button" class="btn btn-primary" id="evo-run">Start evolving</button>
+          <button type="button" class="btn" id="evo-reset">Restart from founders</button>
+          <button type="button" class="btn" id="evo-seed">Restart from the pre-evolved champion</button>
+        </div>
+        <fieldset class="pick">
+          <legend>Stones in a row to win</legend>
+          <div class="seg" role="radiogroup" aria-label="Training line length">
+            <label><input type="radio" name="trainK" value="5"><span>5</span></label>
+            <label><input type="radio" name="trainK" value="6"><span>6</span></label>
+            <label><input type="radio" name="trainK" value="7"><span>7</span></label>
+            <label><input type="radio" name="trainK" value="8" checked><span>8</span></label>
+          </div>
+        </fieldset>
+        <fieldset class="pick">
+          <legend>Units in each brain</legend>
+          <div class="seg" role="radiogroup" aria-label="Units in each brain">
+            <label><input type="radio" name="trainN" value="16" checked><span>16</span></label>
+            <label><input type="radio" name="trainN" value="32"><span>32</span></label>
+            <label><input type="radio" name="trainN" value="64"><span>64</span></label>
+          </div>
+        </fieldset>
+        <p class="note">At eight in a row a generation is about 66 full games, so expect a few seconds each, and roughly twice that with 64 units. Learning shows up over tens of generations. Restarting a bigger brain from the pre-evolved champion grows that champion: the new units start unread, so it plays exactly as before until evolution recruits them.</p>
+        <p class="status" id="evo-status" role="status" aria-live="polite">Press Start evolving to score six founders and begin.</p>
+      </div>
+    </div>
+    <dl class="evo-stats">
+      <div><dt>Generation</dt><dd id="e-gen">0</dd></div>
+      <div><dt>Games played</dt><dd id="e-games">0</dd></div>
+      <div><dt>Behaviour cells</dt><dd id="e-cells">0</dd></div>
+      <div><dt>Improvements</dt><dd id="e-imp">0</dd></div>
+      <div><dt>Best champion</dt><dd id="e-champ">None yet</dd></div>
+    </dl>
+    <div class="evo-grid">
+      <figure class="card">
+        <figcaption>Champion quality</figcaption>
+        <p class="sub">Scores on the fixed validation suite against the hand-tuned bot. A win counts about 1, a loss about 0, and a draw is graded by which side made more forcing threats.</p>
+        <canvas id="chart-q" height="210" role="img" aria-label="Champion quality per generation"></canvas>
+        <div class="keys"><span><i style="border-color:var(--accent)"></i>Best champion</span><span><i class="dash" style="border-color:var(--ink-2)"></i>Current brain</span><span><i class="dash" style="border-color:var(--line-strong)"></i>Even</span></div>
+      </figure>
+      <figure class="card">
+        <figcaption>Champions by style</figcaption>
+        <p class="sub">The archive keeps one champion per behaviour cell: how often it makes forcing threats, and how diagonal its strong lines are. Darker cells score higher; ringed cells are in the champion pool.</p>
+        <canvas id="chart-map" height="230" role="img" aria-label="Behaviour map of champions"></canvas>
+      </figure>
+      <figure class="card">
+        <figcaption>Where improvements came from</figcaption>
+        <p class="sub">Which kind of candidate replaced the current brain.</p>
+        <ol class="weights" id="sources"></ol>
+        <p class="sub" id="acba-line"></p>
+      </figure>
+      <figure class="card">
+        <figcaption>Best champion&rsquo;s brain</figcaption>
+        <p class="sub" id="brain-cap">Sensors on the left, the 16 units in the middle, the vote on the right. Orange links are +1, blue links are &minus;1.</p>
+        <canvas id="chart-brain" height="300" role="img" aria-label="Wiring of the best champion"></canvas>
+      </figure>
+    </div>
+    <div class="row evo-actions">
+      <button type="button" class="btn" id="evo-use" disabled>Play against your champion</button>
+      <button type="button" class="btn" id="evo-copy" disabled>Copy champion</button>
+    </div>
+  </section>
+
+  <!-- ================= RULES ================= -->
+  <section id="panel-rules" role="tabpanel" aria-labelledby="tab-rules" hidden>
+    <article class="guide">
+      <h2>The rules</h2>
+      <p>The board has 11 cells along each of four axes, 14,641 cells in all. The first stone goes in the very centre. After that, every stone must <strong>share a face</strong> with a stone already on the board: it has to sit one step along x, y, z or w from an existing stone. Each cell has eight such neighbours. There is no gravity; the cluster grows wherever the players push it.</p>
+      <p>You win with a straight line of your own stones, eight long by default. Lines can run along any of <strong>40 directions</strong>: the four axes, plus every diagonal you get by stepping along two, three or all four axes at once. On this board that makes 57,840 possible winning lines for eight in a row.</p>
+
+      <h2>Doors</h2>
+      <p>Diagonal stones don&rsquo;t touch each other, so a diagonal line can be one stone from finished while its last cell is still unplayable, because nothing touches it yet. Whoever places a stone next to that cell opens the door, and the line&rsquo;s owner wins on their next move. Both players learn to tiptoe around these cells, and the board marks them with a dashed ring.</p>
+
+      <h2>Why eight in a row is so hard to win</h2>
+      <p>Between two equally strong copies of the hand-tuned bot, short lines favour the attacker and long lines favour the defender. These numbers were measured in this engine:</p>
+      <table class="tbl">
+        <thead><tr><th scope="col">In a row</th><th scope="col">Winning lines</th><th scope="col">First player won</th><th scope="col">Second player won</th><th scope="col">Drawn</th></tr></thead>
+        <tbody>
+          <tr><td>5</td><td>187,992</td><td>17</td><td>13</td><td>0</td></tr>
+          <tr><td>6</td><td>132,600</td><td>22</td><td>8</td><td>0</td></tr>
+          <tr><td>7</td><td>89,920</td><td>15</td><td>15</td><td>0</td></tr>
+          <tr><td>8</td><td>57,840</td><td>0</td><td>2</td><td>18</td></tr>
+        </tbody>
+      </table>
+      <p>Up to seven in a row, every game had a winner. At eight, a careful blocker can stop almost everything, and games drift past 500 moves. A human who can see a two-move combination the bot can&rsquo;t can still beat it.</p>
+
+      <h2>How the bot thinks</h2>
+      <p>Every bot shares the same exact tactics. It takes a winning move if it has one, otherwise blocks one, never opens a door, plays a move that creates two threats at once, and blocks the opponent&rsquo;s chance to do the same. Everything else comes from 14 weights. Every possible line through a cell is scored by how many stones it still needs and whose stones are in it, and the bot plays the cell whose lines add up to the most. Those running totals are updated incrementally, so a move takes a fraction of a millisecond even with tens of thousands of lines in play.</p>
+      <p>The weights are keyed by how many stones a line still needs, so &ldquo;two to go&rdquo; means the same thing at every length. That made it possible to train the seven-in-a-row bot starting from the six-in-a-row champion. The ternary champion adds a small brain on top of all this, described at the end of this page.</p>
+
+      <h2>What evolution found</h2>
+      <p>Evolved from scratch, the bots for five and six in a row beat the hand-tuned bot in almost every game. At seven, the strongest bot came from tuning the hand-tuned bot&rsquo;s own 14 weights in games against it, and it won 36 of 40 against the original. At eight, evolution splits. Trained from scratch, it becomes a pure defender that draws nearly everything and never wins. Trained from the seven champion, it becomes an attacker that beats untrained play every time but is out-defended by the hand-tuned bot. The attacker is the one you play against, because the defender would only stall. When almost every game is a draw, there is very little signal to learn from, and that, more than anything else, is what makes eight in a row in 4D a strange game.</p>
+
+      <h2>Does a bigger brain help?</h2>
+      <p>I tried giving the scorer a hidden layer: four tanh neurons that read how many nearly finished lines of each kind pass through a cell, so it could learn combinations such as two lines that are both two stones from done. It started as an exact copy of the hand-tuned bot, and evolution was allowed to change only the new neurons. A control run tuned the plain 14 weights with the same number of games.</p>
+      <table class="tbl">
+        <thead><tr><th scope="col">In a row</th><th scope="col">With hidden layer</th><th scope="col">Plain weights</th></tr></thead>
+        <tbody>
+          <tr><td>7</td><td>won 28, lost 12</td><td>won 36, lost 4</td></tr>
+          <tr><td>8</td><td>won 5, drew 31, lost 4</td><td>won 3, drew 34, lost 3</td></tr>
+        </tbody>
+      </table>
+      <p>Each line is 40 fresh games against the hand-tuned bot. The extra neurons did not beat simple tuning at seven, and at eight neither version could break a careful defender. The bottleneck is not how the bot scores a move but how far it looks ahead: every bot here plays one move deep, and beating a good blocker at eight would take searching through sequences of forcing moves.</p>
+
+      <h2>Ternary champions</h2>
+      <p>The Evolve tab uses the learning routine from Walker Precision Champions. A brain is 16 identical ternary protoneurons with no layers and no gradients, evolved with mirrored precision probes, mutation, crossover, a champion pool, immigrants and restarts from champions when progress stalls. A champion does not replace the tactics or the line scores. For each candidate move, its six voting units add up to a number between &minus;6 and +6, which multiplies that move&rsquo;s line score by anything from a third to three times. A brain whose units all stay at 0 plays exactly like the bot underneath it.</p>
+      <p>Results on fresh games against the hand-tuned bot, after a few minutes of evolution at each length:</p>
+      <table class="tbl">
+        <thead><tr><th scope="col">In a row</th><th scope="col">Bot underneath</th><th scope="col">With the ternary champion</th></tr></thead>
+        <tbody>
+          <tr><td>8</td><td>won 0, drew 40, lost 0</td><td>won 16, drew 15, lost 9</td></tr>
+          <tr><td>7</td><td>won 18, lost 2</td><td>won 15, lost 5</td></tr>
+          <tr><td>6</td><td>won 20, lost 0</td><td>won 18, lost 2</td></tr>
+          <tr><td>5</td><td>won 19, lost 1</td><td>won 17, lost 3</td></tr>
+        </tbody>
+      </table>
+      <p>Eight in a row is 40 games; the others are 20. At eight, the bot underneath is the hand-tuned bot itself, and the ternary champion is the only bot here that beats it at all. It makes about 18 forcing threats a game to the hand-tuned bot&rsquo;s 11 and wins 16 of 40 games that would otherwise have been draws. It also overreaches and loses 9, so its edge is real but modest. At shorter lengths, the evolved weights underneath already win almost every game, so the ternary layer has little to add and overfits its small validation suite. That is why the opponent menu offers the ternary champion only at eight. Precision probe pairs produced the largest share of accepted improvements at every length.</p>
+      <p>Two other things changed along with the brain. Draws are now graded by which side made more forcing threats instead of all counting as one half, and the archive keeps several styles of play alive. I haven&rsquo;t yet separated how much each of the three contributes.</p>
+    </article>
+  </section>
+</main>
+
+<script>
+/* Connect 8 in four dimensions — engine. Plain JS, no DOM. */
+const C8 = (function () {
+  'use strict';
+  const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+
+  function makeRng(seed) {
+    let a = (seed >>> 0) || 0x9e3779b9;
+    function rng() {
+      a = (a + 0x6D2B79F5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    }
+    rng.int = (n) => Math.floor(rng() * n);
+    let spare = null;
+    rng.normal = () => {
+      if (spare !== null) { const s = spare; spare = null; return s; }
+      let u, v, r;
+      do { u = rng() * 2 - 1; v = rng() * 2 - 1; r = u * u + v * v; } while (r >= 1 || r === 0);
+      const m = Math.sqrt(-2 * Math.log(r) / r);
+      spare = v * m;
+      return u * m;
+    };
+    return rng;
+  }
+  const freshSeed = () => (Math.random() * 4294967296) >>> 0;
+
+  // ------------------------------------------------------------------ board geometry
+  class Board {
+    constructor(n = 11, k = 8) {
+      this.n = n; this.k = k;
+      const N = n * n * n * n;
+      this.N = N;
+      const idx = (x, y, z, w) => x + n * (y + n * (z + n * w));
+      this.idx = idx;
+      this.co = new Uint8Array(N * 4);
+      for (let i = 0; i < N; i++) {
+        this.co[i * 4] = i % n;
+        this.co[i * 4 + 1] = Math.floor(i / n) % n;
+        this.co[i * 4 + 2] = Math.floor(i / (n * n)) % n;
+        this.co[i * 4 + 3] = Math.floor(i / (n * n * n));
+      }
+      const c = (n - 1) >> 1;
+      this.center = idx(c, c, c, c);
+      // 40 directions, canonical form: first non-zero component is +1
+      const dirs = [];
+      for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (let d = -1; d <= 1; d++) for (let e = -1; e <= 1; e++) {
+        const v = [a, b, d, e];
+        const first = v.find((x) => x !== 0);
+        if (first === 1) dirs.push(v);
+      }
+      this.dirs = dirs;
+      // every run of k cells along every direction
+      const cells = [], dirOf = [];
+      for (let di = 0; di < dirs.length; di++) {
+        const u = dirs[di];
+        for (let s = 0; s < N; s++) {
+          const p = [this.co[s * 4], this.co[s * 4 + 1], this.co[s * 4 + 2], this.co[s * 4 + 3]];
+          let ok = true;
+          for (let a = 0; a < 4; a++) { const end = p[a] + u[a] * (k - 1); if (end < 0 || end >= n) { ok = false; break; } }
+          if (!ok) continue;
+          for (let t = 0; t < k; t++) cells.push(idx(p[0] + u[0] * t, p[1] + u[1] * t, p[2] + u[2] * t, p[3] + u[3] * t));
+          dirOf.push(di);
+        }
+      }
+      this.W = dirOf.length;
+      this.wc = Int32Array.from(cells);
+      this.wdir = Uint8Array.from(dirOf);
+      // membership (CSR)
+      const deg = new Int32Array(N);
+      for (let i = 0; i < this.wc.length; i++) deg[this.wc[i]]++;
+      this.deg = deg;
+      this.cwStart = new Int32Array(N + 1);
+      for (let i = 0; i < N; i++) this.cwStart[i + 1] = this.cwStart[i] + deg[i];
+      this.cw = new Int32Array(this.wc.length);
+      const fill = this.cwStart.slice(0, N);
+      for (let w = 0; w < this.W; w++) for (let t = 0; t < k; t++) { const cell = this.wc[w * k + t]; this.cw[fill[cell]++] = w; }
+      // face neighbours: +-1 along one axis
+      this.nb = new Int32Array(N * 8).fill(-1);
+      const strides = [1, n, n * n, n * n * n];
+      for (let i = 0; i < N; i++) for (let a = 0; a < 4; a++) {
+        const v = this.co[i * 4 + a];
+        if (v > 0) this.nb[i * 8 + a * 2] = i - strides[a];
+        if (v < n - 1) this.nb[i * 8 + a * 2 + 1] = i + strides[a];
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------ game state
+  class Game {
+    constructor(board) {
+      this.b = board;
+      const N = board.N, W = board.W;
+      this.cells = new Uint8Array(N);
+      this.cnt = [null, new Uint8Array(W), new Uint8Array(W)];
+      this.warm = [null, new Int16Array(N), new Int16Array(N)];
+      this.legalList = new Int32Array(N);
+      this.legalPos = new Int32Array(N);
+      this.listeners = [];
+      this.reset();
+    }
+    reset() {
+      this.cells.fill(0); this.cnt[1].fill(0); this.cnt[2].fill(0); this.warm[1].fill(0); this.warm[2].fill(0);
+      this.legalPos.fill(-1); this.nLegal = 0;
+      this.hot = [null, [], []];
+      this.moves = [];
+      this.turn = 1; this.winner = 0; this.winWindow = -1;
+      this._addLegal(this.b.center);
+    }
+    _addLegal(c) { if (this.legalPos[c] >= 0) return; this.legalPos[c] = this.nLegal; this.legalList[this.nLegal++] = c; }
+    _removeLegal(c) {
+      const p = this.legalPos[c];
+      if (p < 0) return;
+      const last = this.legalList[--this.nLegal];
+      this.legalList[p] = last; this.legalPos[last] = p; this.legalPos[c] = -1;
+    }
+    isLegal(c) { return this.winner === 0 && c >= 0 && c < this.b.N && this.legalPos[c] >= 0; }
+    play(c) {
+      if (!this.isLegal(c)) throw new Error('Illegal move ' + c);
+      const b = this.b, p = this.turn, q = 3 - p, k = b.k, wc = b.wc;
+      this.cells[c] = p;
+      this._removeLegal(c);
+      for (let j = 0; j < 8; j++) { const e = b.nb[c * 8 + j]; if (e >= 0 && !this.cells[e]) this._addLegal(e); }
+      const cntP = this.cnt[p], cntQ = this.cnt[q], warmP = this.warm[p], warmQ = this.warm[q], L = this.listeners;
+      for (let t = b.cwStart[c], end = b.cwStart[c + 1]; t < end; t++) {
+        const w = b.cw[t], o = cntP[w], qq = cntQ[w];
+        for (let li = 0; li < L.length; li++) L[li].onWindow(w, p, o, qq);
+        cntP[w] = o + 1;
+        const base = w * k;
+        if (qq === 0) {
+          if (o + 1 === k - 2) for (let s = 0; s < k; s++) warmP[wc[base + s]]++;
+          else if (o + 1 === k - 1) { for (let s = 0; s < k; s++) warmP[wc[base + s]]--; this.hot[p].push(w); }
+          else if (o + 1 === k && !this.winner) { this.winner = p; this.winWindow = w; }
+        } else if (o === 0 && qq === k - 2) {
+          for (let s = 0; s < k; s++) warmQ[wc[base + s]]--;
+        }
+      }
+      for (let li = 0; li < L.length; li++) if (L[li].onMove) L[li].onMove(c, p);
+      this.moves.push(c);
+      this.turn = q;
+      if (!this.winner && this.nLegal === 0) this.winner = -1;
+    }
+    /** Empty cells that would complete eight for player p. legal=true: playable now; false: not yet reachable. */
+    winCells(p, legal) {
+      const q = 3 - p, k = this.b.k, wc = this.b.wc, out = [];
+      const list = this.hot[p];
+      let keep = 0;
+      for (let h = 0; h < list.length; h++) {
+        const w = list[h];
+        if (this.cnt[p][w] !== k - 1 || this.cnt[q][w] !== 0) continue;
+        list[keep++] = w;
+        for (let s = 0; s < k; s++) {
+          const e = wc[w * k + s];
+          if (!this.cells[e]) { if ((this.legalPos[e] >= 0) === legal && !out.includes(e)) out.push(e); break; }
+        }
+      }
+      list.length = keep;
+      return out;
+    }
+    lineOf(w) { const k = this.b.k; return Array.from(this.b.wc.subarray(w * k, w * k + k)); }
+  }
+
+  // ------------------------------------------------------------------ bot
+  // Genome: 14 numbers in log space. att[0..6] value live windows by how many of the bot's own
+  // stones they hold; def[1..6] value the opponent's live windows; the last gene rewards moves
+  // that create a threat the opponent must answer.
+  // Genes are keyed by how many stones a line still needs, so they mean the same thing
+  // whatever the winning length is.
+  const GENES = [
+    { key: 'e0', label: 'Empty line', group: 'attack' },
+    ...[2, 3, 4, 5, 6, 7].map((m) => ({ key: 'a' + m, label: `Own line, ${m} to go`, group: 'attack' })),
+    ...[2, 3, 4, 5, 6, 7].map((m) => ({ key: 'd' + m, label: `Their line, ${m} to go`, group: 'defence' })),
+    { key: 'threat', label: 'Forcing threat', group: 'tactics' },
+  ];
+  const NAIVE = new Array(14).fill(0);
+  const L3 = Math.log(3);
+  const BASELINE = [0, ...[2, 3, 4, 5, 6, 7].map((m) => (8 - m) * L3), ...[2, 3, 4, 5, 6, 7].map((m) => Math.log(0.8) + (8 - m) * L3), 6 * L3];
+  const decode = (g) => {
+    const e = (v) => Math.exp(Math.max(-12, Math.min(14, v)));
+    const a = [0, 0], d = [0, 0];
+    for (let m = 2; m <= 7; m++) { a[m] = e(g[m - 1]); d[m] = e(g[m + 5]); }
+    return { e0: e(g[0]), a, d, threat: e(g[13]) };
+  };
+
+  class Bot {
+    constructor(game, me, genome, rng) {
+      this.g = game; this.me = me;
+      this.rng = rng || makeRng(freshSeed());
+      this.S = new Float32Array(game.b.N);
+      this.mark = new Uint8Array(game.b.N);
+      this.setGenome(genome);
+      game.listeners.push(this);
+    }
+    setGenome(genome) {
+      this.genome = Array.from(genome);
+      const p = decode(genome);
+      const k = this.g.b.k;
+      this.val = new Float64Array((k + 1) * (k + 1));
+      for (let o = 0; o <= k; o++) for (let q = 0; q <= k; q++) {
+        let v = 0;
+        if (q === 0 && o === 0) v = p.e0;
+        else if (q === 0) { const m = k - o; v = m === 0 ? 0 : m === 1 ? 4 * p.a[2] : p.a[Math.min(7, m)]; }
+        else if (o === 0) { const m = k - q; v = m === 0 ? 0 : m === 1 ? 4 * p.d[2] : p.d[Math.min(7, m)]; }
+        this.val[o * (k + 1) + q] = v;
+      }
+      this.threatW = p.threat;
+      this.rebuild();
+    }
+    /** Recompute every cell's score from the current board (used when joining a game midway). */
+    rebuild() {
+      const g = this.g, b = g.b, k = b.k, S = this.S, me = this.me, op = 3 - me;
+      S.fill(0);
+      for (let w = 0; w < b.W; w++) {
+        const v = this.val[g.cnt[me][w] * (k + 1) + g.cnt[op][w]];
+        if (v) for (let s = 0; s < k; s++) S[b.wc[w * k + s]] += v;
+      }
+    }
+    onWindow(w, p, o, qq) {
+      const k = this.g.b.k, K = k + 1;
+      let before, after;
+      if (p === this.me) { before = this.val[o * K + qq]; after = this.val[(o + 1) * K + qq]; }
+      else { before = this.val[qq * K + o]; after = this.val[qq * K + o + 1]; }
+      const d = after - before;
+      if (d !== 0) { const wc = this.g.b.wc, base = w * k; for (let s = 0; s < k; s++) this.S[wc[base + s]] += d; }
+    }
+    /** Distinct cells that would become playable wins for p if p played c. */
+    threatsAfter(c, p, pendingAdj) {
+      const g = this.g, b = g.b, k = b.k, q = 3 - p, wc = b.wc, cntP = g.cnt[p], cntQ = g.cnt[q];
+      const found = [];
+      if (g.warm[p][c] > 0) {
+        for (let t = b.cwStart[c], end = b.cwStart[c + 1]; t < end; t++) {
+          const w = b.cw[t];
+          if (cntP[w] !== k - 2 || cntQ[w] !== 0) continue;
+          for (let s = 0; s < k; s++) {
+            const e = wc[w * k + s];
+            if (e === c || g.cells[e]) continue;
+            let legalAfter = g.legalPos[e] >= 0;
+            if (!legalAfter) for (let j = 0; j < 8; j++) if (b.nb[c * 8 + j] === e) { legalAfter = true; break; }
+            if (legalAfter && !found.includes(e)) found.push(e);
+          }
+        }
+      }
+      if (pendingAdj) for (let j = 0; j < 8; j++) { const e = b.nb[c * 8 + j]; if (e >= 0 && pendingAdj.has(e) && !found.includes(e)) found.push(e); }
+      return found.length;
+    }
+    choose() {
+      const g = this.g, b = g.b, me = this.me, op = 3 - me;
+      if (!g.moves.length) return b.center;
+      this.prepare();
+      const win = g.winCells(me, true);
+      if (win.length) return win[0];
+      const legal = g.legalList.subarray(0, g.nLegal);
+      const block = g.winCells(op, true);
+      if (block.length) return this._best(block);
+      // cells that would open a door to one of the opponent's waiting wins
+      const mark = this.mark;
+      const oppPending = g.winCells(op, false);
+      const unsafe = [];
+      for (const e of oppPending) for (let j = 0; j < 8; j++) { const c = b.nb[e * 8 + j]; if (c >= 0 && g.legalPos[c] >= 0 && !mark[c]) { mark[c] = 1; unsafe.push(c); } }
+      const minePending = new Set(g.winCells(me, false));
+      const theirPendingSet = new Set(oppPending);
+      let best = -1, bestScore = -Infinity, forkMove = -1, blockFork = -1, blockForkScore = -Infinity;
+      for (let i = 0; i < legal.length; i++) {
+        const c = legal[i];
+        if (mark[c]) continue;
+        let threats = 0;
+        if (g.warm[me][c] > 0 || minePending.size) threats = this.threatsAfter(c, me, minePending);
+        if (threats >= 2 && forkMove < 0) forkMove = c;
+        if (g.warm[op][c] > 0 || theirPendingSet.size) {
+          const theirs = this.threatsAfter(c, op, theirPendingSet);
+          if (theirs >= 2 && this.score(c) > blockForkScore) { blockFork = c; blockForkScore = this.score(c); }
+        }
+        const score = this.score(c) + this.threatW * threats + this.rng() * 1e-6;
+        if (score > bestScore) { bestScore = score; best = c; }
+      }
+      for (const c of unsafe) mark[c] = 0;
+      if (forkMove >= 0) return forkMove;
+      if (blockFork >= 0) return blockFork;
+      if (best >= 0) return best;
+      return this._best(Array.from(legal));
+    }
+    _best(cands) {
+      let best = cands[0], bs = -Infinity;
+      for (const c of cands) { const s = this.score(c) + this.rng() * 1e-6; if (s > bs) { bs = s; best = c; } }
+      return best;
+    }
+    score(c) { return this.S[c]; }
+    prepare() {}
+    detach() { const L = this.g.listeners, i = L.indexOf(this); if (i >= 0) L.splice(i, 1); }
+  }
+
+  // ------------------------------------------------------------------ neural bot
+  // Linear scorer as before, plus a hidden layer of H tanh neurons. Inputs are the counts of the
+  // bot's own lines 2, 3 and 4 stones from done through the cell, and the same for the opponent.
+  // Genome: 14 linear genes, then H x (I + 1) hidden weights, H output weights, 1 output scale.
+  const NN_I = 6, NN_H = 4, NN_LEN = 14 + NN_H * (NN_I + 1) + NN_H + 1;
+  class NeuralBot extends Bot {
+    constructor(game, me, genome, rng) {
+      const N = game.b.N;
+      super(game, me, genome, rng);
+      this.F = this.F || new Int16Array(N * NN_I);
+      this.Nn = this.Nn || new Float32Array(N);
+      this.dirtyFlag = this.dirtyFlag || new Uint8Array(N);
+      this.dirty = this.dirty || [];
+    }
+    setGenome(genome) {
+      const lin = Array.from(genome).slice(0, 14);
+      const k = this.g.b.k, N = this.g.b.N;
+      if (!this.F) { this.F = new Int16Array(N * NN_I); this.Nn = new Float32Array(N); this.dirtyFlag = new Uint8Array(N); this.dirty = []; }
+      let o = 14;
+      this.W = []; this.bias = [];
+      for (let h = 0; h < NN_H; h++) { this.W.push(Array.from(genome).slice(o, o + NN_I)); o += NN_I; this.bias.push(genome[o++]); }
+      this.w2 = Array.from(genome).slice(o, o + NN_H); o += NN_H;
+      this.outScale = Math.exp(Math.max(-6, Math.min(12, genome[o])));
+      // input slot for each (own, opp) window state from this bot's point of view, -1 if not tracked
+      this.slot = new Int8Array((k + 1) * (k + 1)).fill(-1);
+      for (let m = 2; m <= 4; m++) {
+        if (k - m >= 1) { this.slot[(k - m) * (k + 1)] = m - 2; this.slot[k - m] = 3 + m - 2; }
+      }
+      super.setGenome(lin);
+      this.genome = Array.from(genome);
+    }
+    _neural(c) {
+      const F = this.F, base = c * NN_I;
+      let out = 0;
+      for (let h = 0; h < NN_H; h++) {
+        const W = this.W[h];
+        let z = this.bias[h];
+        for (let i = 0; i < NN_I; i++) z += W[i] * F[base + i];
+        out += this.w2[h] * Math.tanh(z);
+      }
+      return this.outScale * out;
+    }
+    rebuild() {
+      super.rebuild();
+      if (!this.F) return;
+      const g = this.g, b = g.b, k = b.k, me = this.me, op = 3 - me, K = k + 1;
+      this.F.fill(0);
+      for (let w = 0; w < b.W; w++) {
+        const s = this.slot[g.cnt[me][w] * K + g.cnt[op][w]];
+        if (s >= 0) for (let t = 0; t < k; t++) this.F[b.wc[w * k + t] * NN_I + s]++;
+      }
+      const c0 = this._neural(-1 < 0 ? 0 : 0);
+      for (let c = 0; c < b.N; c++) this.Nn[c] = this._neural(c);
+      this.dirty.length = 0; this.dirtyFlag.fill(0);
+      void c0;
+    }
+    onWindow(w, p, o, qq) {
+      super.onWindow(w, p, o, qq);
+      const k = this.g.b.k, K = k + 1;
+      let before, after;
+      if (p === this.me) { before = this.slot[o * K + qq]; after = this.slot[(o + 1) * K + qq]; }
+      else { before = this.slot[qq * K + o]; after = this.slot[qq * K + o + 1]; }
+      if (before === after) return;
+      const wc = this.g.b.wc, base = w * k, F = this.F;
+      for (let t = 0; t < k; t++) {
+        const e = wc[base + t];
+        if (before >= 0) F[e * NN_I + before]--;
+        if (after >= 0) F[e * NN_I + after]++;
+        if (!this.dirtyFlag[e]) { this.dirtyFlag[e] = 1; this.dirty.push(e); }
+      }
+    }
+    prepare() {
+      const d = this.dirty;
+      for (let i = 0; i < d.length; i++) { const c = d[i]; this.Nn[c] = this._neural(c); this.dirtyFlag[c] = 0; }
+      d.length = 0;
+    }
+    score(c) { return this.S[c] + this.Nn[c]; }
+  }
+  /** A bot of the right kind for the genome's length. */
+  const makeBot = (game, me, genome, rng) => (genome.length > 14 ? new NeuralBot(game, me, genome, rng) : new Bot(game, me, genome, rng));
+  /** Neural genome that behaves exactly like the given linear one: output weights start at zero. */
+  function neuralFrom(linear, rng) {
+    const g = Array.from(linear);
+    for (let h = 0; h < NN_H; h++) { for (let i = 0; i < NN_I; i++) g.push((rng ? rng.normal() : 0) * 0.5); g.push(0); }
+    for (let h = 0; h < NN_H; h++) g.push(0);
+    g.push(Math.log(300));
+    return g;
+  }
+
+  // ------------------------------------------------------------------ matches
+  /** One game between genomes A (moves first) and B. Returns 1 if A wins, 2 if B wins, 0 for a draw. */
+  function playGame(board, gA, gB, rng, opts = {}) {
+    const g = opts.game || new Game(board);
+    g.reset(); g.listeners.length = 0;
+    const A = makeBot(g, 1, gA, rng), B = makeBot(g, 2, gB, rng);
+    const opening = opts.opening !== undefined ? opts.opening : 4, maxMoves = opts.maxMoves || 900;
+    while (!g.winner && g.moves.length < maxMoves) {
+      let c;
+      if (g.moves.length > 0 && g.moves.length < opening) c = g.legalList[rng.int(g.nLegal)];
+      else c = (g.turn === 1 ? A : B).choose();
+      g.play(c);
+    }
+    const result = g.winner > 0 ? g.winner : 0;
+    return { result, moves: g.moves.length, game: g };
+  }
+
+  // ------------------------------------------------------------------ CMA-ES (same as the sudoku lab)
+  function jacobiEigen(A) {
+    const n = A.length, a = A.map((r) => Float64Array.from(r));
+    const V = Array.from({ length: n }, (_, i) => { const r = new Float64Array(n); r[i] = 1; return r; });
+    for (let sweep = 0; sweep < 80; sweep++) {
+      let off = 0;
+      for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) off += a[i][j] * a[i][j];
+      if (off < 1e-24) break;
+      for (let p = 0; p < n - 1; p++) for (let q = p + 1; q < n; q++) {
+        const apq = a[p][q];
+        if (Math.abs(apq) < 1e-300) continue;
+        const theta = (a[q][q] - a[p][p]) / (2 * apq);
+        const tt = (theta >= 0 ? 1 : -1) / (Math.abs(theta) + Math.sqrt(theta * theta + 1));
+        const c = 1 / Math.sqrt(tt * tt + 1), s = tt * c;
+        for (let k = 0; k < n; k++) { const akp = a[k][p], akq = a[k][q]; a[k][p] = c * akp - s * akq; a[k][q] = s * akp + c * akq; }
+        for (let k = 0; k < n; k++) { const apk = a[p][k], aqk = a[q][k]; a[p][k] = c * apk - s * aqk; a[q][k] = s * apk + c * aqk; }
+        for (let k = 0; k < n; k++) { const vkp = V[k][p], vkq = V[k][q]; V[k][p] = c * vkp - s * vkq; V[k][q] = s * vkp + c * vkq; }
+      }
+    }
+    return { values: Array.from({ length: n }, (_, i) => a[i][i]), vectors: V };
+  }
+  class CMAES {
+    constructor(mean, sigma, opts = {}) {
+      const n = mean.length;
+      this.n = n; this.rng = opts.rng || makeRng(freshSeed());
+      this.lambda = opts.lambda || 4 + Math.floor(3 * Math.log(n));
+      this.mu = Math.floor(this.lambda / 2);
+      let w = Array.from({ length: this.mu }, (_, i) => Math.log(this.mu + 0.5) - Math.log(i + 1));
+      const sw = w.reduce((a, b) => a + b, 0);
+      this.weights = w = w.map((v) => v / sw);
+      this.mueff = 1 / w.reduce((a, b) => a + b * b, 0);
+      const me = this.mueff;
+      this.cs = (me + 2) / (n + me + 5);
+      this.ds = 1 + 2 * Math.max(0, Math.sqrt((me - 1) / (n + 1)) - 1) + this.cs;
+      this.cc = (4 + me / n) / (n + 4 + (2 * me) / n);
+      this.c1 = 2 / ((n + 1.3) * (n + 1.3) + me);
+      this.cmu = Math.min(1 - this.c1, (2 * (me - 2 + 1 / me)) / ((n + 2) * (n + 2) + me));
+      this.chiN = Math.sqrt(n) * (1 - 1 / (4 * n) + 1 / (21 * n * n));
+      this.mean = Float64Array.from(mean); this.sigma = sigma;
+      this.pc = new Float64Array(n); this.ps = new Float64Array(n);
+      const eye = () => Array.from({ length: n }, (_, i) => { const r = new Float64Array(n); r[i] = 1; return r; });
+      this.C = eye(); this.B = eye(); this.invsqrtC = eye();
+      this.Dg = new Float64Array(n).fill(1);
+      this.gen = 0; this.eigenGen = 0;
+    }
+    ask() {
+      const n = this.n;
+      this.xs = [];
+      for (let k = 0; k < this.lambda; k++) {
+        const z = new Float64Array(n);
+        for (let i = 0; i < n; i++) z[i] = this.rng.normal() * this.Dg[i];
+        const x = new Float64Array(n);
+        for (let i = 0; i < n; i++) { let y = 0; for (let j = 0; j < n; j++) y += this.B[i][j] * z[j]; x[i] = this.mean[i] + this.sigma * y; }
+        this.xs.push(x);
+      }
+      return this.xs;
+    }
+    tell(fitness) {
+      const n = this.n, mu = this.mu, w = this.weights;
+      const order = Array.from({ length: this.lambda }, (_, i) => i).sort((a, b) => fitness[b] - fitness[a]);
+      const old = Float64Array.from(this.mean);
+      for (let i = 0; i < n; i++) { let m = 0; for (let k = 0; k < mu; k++) m += w[k] * this.xs[order[k]][i]; this.mean[i] = m; }
+      const yw = new Float64Array(n);
+      for (let i = 0; i < n; i++) yw[i] = (this.mean[i] - old[i]) / this.sigma;
+      const cy = new Float64Array(n);
+      for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < n; j++) s += this.invsqrtC[i][j] * yw[j]; cy[i] = s; }
+      const csn = Math.sqrt(this.cs * (2 - this.cs) * this.mueff);
+      let psn = 0;
+      for (let i = 0; i < n; i++) { this.ps[i] = (1 - this.cs) * this.ps[i] + csn * cy[i]; psn += this.ps[i] * this.ps[i]; }
+      psn = Math.sqrt(psn);
+      const hsig = psn / Math.sqrt(1 - Math.pow(1 - this.cs, 2 * (this.gen + 1))) / this.chiN < 1.4 + 2 / (n + 1) ? 1 : 0;
+      const ccn = Math.sqrt(this.cc * (2 - this.cc) * this.mueff);
+      for (let i = 0; i < n; i++) this.pc[i] = (1 - this.cc) * this.pc[i] + hsig * ccn * yw[i];
+      const ys = Array.from({ length: mu }, (_, k) => { const x = this.xs[order[k]], y = new Float64Array(n); for (let i = 0; i < n; i++) y[i] = (x[i] - old[i]) / this.sigma; return y; });
+      const c1 = this.c1, cmu = this.cmu, keep = 1 - c1 - cmu, corr = (1 - hsig) * this.cc * (2 - this.cc);
+      for (let i = 0; i < n; i++) for (let j = 0; j <= i; j++) {
+        let rank = 0;
+        for (let k = 0; k < mu; k++) rank += w[k] * ys[k][i] * ys[k][j];
+        const v = keep * this.C[i][j] + c1 * (this.pc[i] * this.pc[j] + corr * this.C[i][j]) + cmu * rank;
+        this.C[i][j] = v; this.C[j][i] = v;
+      }
+      this.sigma = Math.max(1e-3, Math.min(1.4, this.sigma * Math.exp((this.cs / this.ds) * (psn / this.chiN - 1))));
+      this.gen++;
+      if (this.gen - this.eigenGen > this.lambda / (c1 + cmu) / n / 10) {
+        const { values, vectors } = jacobiEigen(this.C);
+        for (let i = 0; i < n; i++) this.Dg[i] = Math.sqrt(Math.max(1e-20, values[i]));
+        this.B = vectors;
+        for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { let s = 0; for (let k = 0; k < n; k++) s += (vectors[i][k] * vectors[j][k]) / this.Dg[k]; this.invsqrtC[i][j] = s; }
+        this.eigenGen = this.gen;
+      }
+      return order;
+    }
+  }
+
+  // ------------------------------------------------------------------ self-play trainer
+  /**
+   * Each candidate plays the reigning champion and a fixed sparring partner, once with each colour,
+   * from random openings. The mean genome is then tested over a match against the sparring partner.
+   * Work is chopped into single games so the page can run it a few milliseconds at a time.
+   */
+  class Trainer {
+    constructor(board, opts = {}) {
+      this.b = board;
+      this.seed = opts.seed || freshSeed();
+      this.rng = makeRng(this.seed);
+      this.start = Float64Array.from(opts.genome || NAIVE);
+      this.cma = new CMAES(this.start, opts.sigma || 0.8, { lambda: opts.lambda || 12, rng: makeRng(this.seed ^ 0x55aa55) });
+      this.sparring = opts.sparring || BASELINE;
+      this.champion = { genome: Float64Array.from(this.start), gen: 0, vsBase: null };
+      this.game = new Game(board);
+      this.history = [];
+      this.testGames = opts.testGames || 10;
+      this.maxMoves = opts.maxMoves || (board.k >= 8 ? 320 : 420);
+      this.gen = null;
+      this.games = 0;
+      this.lastGame = null;
+    }
+    _plan() {
+      const xs = this.cma.ask(), jobs = [];
+      xs.forEach((x, i) => {
+        // A ladder: the untrained bot (decisive games reward fast, accurate attack), the hand-tuned
+        // bot and the reigning champion (mostly about not losing).
+        for (const opp of [NAIVE, this.sparring, this.champion.genome]) jobs.push({ i, opp, first: true }, { i, opp, first: false });
+      });
+      this.gen = { xs, jobs, next: 0, score: new Float64Array(xs.length), n: new Float64Array(xs.length), test: null };
+    }
+    _match(gX, gY, first, seed) {
+      const cap = this.maxMoves;
+      const r = playGame(this.b, first ? gX : gY, first ? gY : gX, makeRng(seed), { game: this.game, maxMoves: cap });
+      this.games++;
+      const mine = first ? 1 : 2;
+      this.lastGame = { moves: r.game.moves.slice(), winner: r.result, xFirst: first };
+      // Win = 1, draw = 0.5, loss = 0, nudged so faster wins and longer resistance score slightly higher.
+      const len = Math.min(1, r.moves / cap);
+      return r.result === 0 ? 0.5 : r.result === mine ? 1 - 0.15 * len : 0.15 * len;
+    }
+    work(ms) {
+      const deadline = now() + ms;
+      let event = 'playing';
+      while (now() < deadline) {
+        if (!this.gen) this._plan();
+        const G = this.gen;
+        if (G.next < G.jobs.length) {
+          const j = G.jobs[G.next++];
+          G.score[j.i] += this._match(G.xs[j.i], j.opp, j.first, this.rng.int(1 << 30));
+          G.n[j.i]++;
+          continue;
+        }
+        if (!G.test) {
+          const fit = Array.from(G.score, (s, i) => s / G.n[i]);
+          this.cma.tell(fit);
+          G.fit = fit;
+          G.test = { mean: Float64Array.from(this.cma.mean), played: 0, base: 0, champ: 0 };
+        }
+        const T = G.test;
+        if (T.played < this.testGames) {
+          const first = T.played % 2 === 0, seed = 777000 + T.played * 31;
+          T.base += this._match(T.mean, this.sparring, first, seed);
+          T.champ += this._match(T.mean, this.champion.genome, first, seed + 1);
+          T.played++;
+          continue;
+        }
+        const rec = {
+          gen: this.cma.gen, fit: G.fit, best: Math.max(...G.fit), avg: G.fit.reduce((a, b) => a + b, 0) / G.fit.length,
+          vsBase: T.base / T.played, vsChamp: T.champ / T.played, sigma: this.cma.sigma, genome: T.mean,
+        };
+        if (this.champion.vsBase === null || rec.vsBase > this.champion.vsBase + 1e-9 || (rec.vsBase === this.champion.vsBase && rec.vsChamp > 0.5)) {
+          this.champion = { genome: T.mean, gen: rec.gen, vsBase: rec.vsBase };
+          rec.newChampion = true;
+        }
+        this.history.push(rec);
+        this.gen = null;
+        event = 'generation';
+        break;
+      }
+      return event;
+    }
+  }
+
+  return { makeRng, freshSeed, Board, Game, Bot, NeuralBot, makeBot, neuralFrom, NN_LEN, NN_H, NN_I, GENES, NAIVE, BASELINE, decode, playGame, CMAES, Trainer };
+})();
+
+
+</script>
+<script>
+/* Ternary protoneuron brains for Connect 8 in 4D, learned by champion evolution.
+ * A port of the learning routine in Walker Precision Champions v16.1:
+ *   - every unit is the walker's protoneuron: exactly three input slots, each a
+ *     source (a ternary sensor or ANY unit's previous output, itself included)
+ *     with a weight in {-1, 0, +1}; z = bias + sum w*source; three affine pieces
+ *     r0 = fb0 - d, r1 = fb1, r2 = fb2 + d with d = gain * clamp(z, 12) / 0.22;
+ *     the output is the argmax piece mapped to -1 / 0 / +1. No layers.
+ *   - a fixed number V of ternary votes reads the units into one output.
+ *   - no gradients anywhere: mutation, crossover, ACBA-style mirrored latent
+ *     probes, and a MAP-Elites champion archive with a diverse pool.
+ * The brain does not replace the bot's tactics. It re-ranks candidate moves: a
+ * vote total v in [-V, V] multiplies the cell's line score by 3^(v / V).
+ */
+const T8 = (function (C8) {
+  'use strict';
+  const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  const DECT = 0.22, ZC = 12;
+  const LIM = { bias: 2.5, biasStep: 0.25, fireBias: 5, fireBiasStep: 0.3, gainMin: 0.08, gainMax: 3.5, gainDown: 0.82, gainUp: 1.22, gainInit: 0.9 };
+  // cumulative kind boundaries, the rest is the decoder (the walker's TERNARY_RULE)
+  const RULE = { weight: 0.26, rewire: 0.5, bias: 0.62, fireBias: 0.72, gain: 0.78, silenceOdds: 0.1, regrowRewire: 0.5, focus: 0.85, sensorBias: 0.5, orphanPreference: 0.5, jolt: 0.08, joltScale: 1.5 };
+
+  // ------------------------------------------------------------------ sensors
+  const SENSORS = [
+    { label: 'Own lines 2 to go', group: 'own' }, { label: 'Own lines 3 to go', group: 'own' }, { label: 'Own lines 4 to go', group: 'own' }, { label: 'Own lines 5+ to go', group: 'own' },
+    { label: 'Their lines 2 to go', group: 'their' }, { label: 'Their lines 3 to go', group: 'their' }, { label: 'Their lines 4 to go', group: 'their' }, { label: 'Their lines 5+ to go', group: 'their' },
+    { label: 'Touches own stones', group: 'shape' }, { label: 'Touches their stones', group: 'shape' },
+    { label: 'Creates threats', group: 'tactics' }, { label: 'Spoils their threats', group: 'tactics' },
+    { label: 'Opens their door', group: 'tactics' }, { label: 'Opens my door', group: 'tactics' },
+    { label: 'Game phase', group: 'context' }, { label: 'Line pressure', group: 'context' }, { label: 'Constant +1', group: 'context' },
+  ];
+  const S = SENSORS.length;
+  const KEY = [10, 11, 0, 4, 1, 5, 13, 12, 8, 9, 2, 6, 15, 14, 16, 3, 7];
+  const tri3 = (n) => (n === 0 ? -1 : n === 1 ? 0 : 1);
+
+  // ------------------------------------------------------------------ brains
+  // brain = { N, V, src Int16Array(3N), w Int8Array(3N), bias, fb (3N), gain, dec Int8Array(N) }
+  function cloneBrain(b) { return { N: b.N, V: b.V, src: b.src.slice(), w: b.w.slice(), bias: b.bias.slice(), fb: b.fb.slice(), gain: b.gain.slice(), dec: b.dec.slice() }; }
+  function emptyBrain(N, V) { return { N, V, src: new Int16Array(3 * N), w: new Int8Array(3 * N), bias: new Float32Array(N), fb: new Float32Array(3 * N), gain: new Float32Array(N).fill(LIM.gainInit), dec: new Int8Array(N) }; }
+  const pick = (rng, a) => a[Math.floor(rng() * a.length)];
+
+  function wiring(b) {
+    const N = b.N, read = new Int32Array(N);
+    for (let x = 0; x < 3 * N; x++) if (b.w[x] && b.src[x] >= S && b.src[x] - S !== Math.floor(x / 3)) read[b.src[x] - S]++;
+    const unread = [];
+    for (let i = 0; i < N; i++) if (!read[i] && !b.dec[i]) unread.push(i);
+    return { read, unread };
+  }
+  function relevant(b) {
+    const set = new Set();
+    for (let i = 0; i < b.N; i++) if (b.dec[i]) { set.add(i); for (let k = 0; k < 3; k++) { const c = b.src[3 * i + k]; if (c >= S) set.add(c - S); } }
+    return [...set];
+  }
+  function chooseSource(b, i, rng, ws) {
+    if (rng() < RULE.sensorBias) return rng.int(S);
+    const unread = ws.unread.filter((u) => u !== i);
+    if (unread.length && rng() < RULE.orphanPreference) return S + pick(rng, unread);
+    const c = rng.int(S + b.N);
+    return c;
+  }
+  function repairDuplicates(b, i, rng, ws) {
+    let fixed = 0;
+    for (let k1 = 0; k1 < 3; k1++) for (let k2 = k1 + 1; k2 < 3; k2++) {
+      const x1 = 3 * i + k1, x2 = 3 * i + k2;
+      if (!b.w[x1] || !b.w[x2] || b.src[x1] !== b.src[x2] || b.w[x1] === b.w[x2]) continue;
+      let ok = false;
+      for (let t = 0; t < 8 && !ok; t++) { const c = chooseSource(b, i, rng, ws); if (c !== b.src[x1]) { b.src[x2] = c; ok = true; } }
+      if (!ok) b.w[x2] = b.w[x1];
+      fixed++;
+    }
+    return fixed;
+  }
+  function repairVotes(b, rng) {
+    const on = [], off = [];
+    for (let i = 0; i < b.N; i++) (b.dec[i] ? on : off).push(i);
+    while (on.length > b.V) { const j = rng.int(on.length), [i] = on.splice(j, 1); b.dec[i] = 0; off.push(i); }
+    while (on.length < b.V && off.length) { const j = rng.int(off.length), [i] = off.splice(j, 1); b.dec[i] = rng() < 0.5 ? -1 : 1; on.push(i); }
+  }
+  /** A newborn is built, not sampled: three live slots on distinct sources, at least one sensor,
+   *  key sensors covered first, unit sources to the least-read unit, votes spread out. */
+  function birth(rng, N = 16, V = 6) {
+    const b = emptyBrain(N, V), readCount = new Int32Array(N);
+    const order = Array.from({ length: N }, (_, i) => i);
+    for (let i = N - 1; i > 0; i--) { const j = rng.int(i + 1); [order[i], order[j]] = [order[j], order[i]]; }
+    let keyCursor = rng.int(3);
+    const leastRead = (exclude, self) => { let best = Infinity, cands = []; for (let j = 0; j < N; j++) { if (exclude.has(j)) continue; const c = readCount[j] + (j === self ? 0.5 : 0); if (c < best) { best = c; cands = [j]; } else if (c === best) cands.push(j); } return cands.length ? pick(rng, cands) : -1; };
+    const freshSensor = (used) => { let s, t = 0; do { s = rng.int(S); } while (used.has(s) && t++ < 64); return s; };
+    for (const i of order) {
+      const used = new Set();
+      const s0 = KEY[keyCursor++ % KEY.length]; used.add(s0);
+      let s1 = rng() < 0.5 ? freshSensor(used) : (() => { const j = leastRead(new Set(), i); return j >= 0 ? S + j : freshSensor(used); })();
+      if (used.has(s1)) s1 = freshSensor(used);
+      used.add(s1);
+      const ex = new Set(); for (const u of used) if (u >= S) ex.add(u - S);
+      let s2 = (() => { const j = leastRead(ex, i); return j >= 0 ? S + j : -1; })();
+      if (s2 < 0 || used.has(s2)) s2 = freshSensor(used);
+      [s0, s1, s2].forEach((src, k) => { b.src[3 * i + k] = src; b.w[3 * i + k] = rng() < 0.5 ? -1 : 1; if (src >= S) readCount[src - S]++; });
+    }
+    const chosen = new Set();
+    for (let v = 0; v < V; v++) {
+      let best = Infinity, cands = [];
+      for (let i = 0; i < N; i++) { if (chosen.has(i)) continue; const c = readCount[i] > 0 ? 0 : -1; if (c < best) { best = c; cands = [i]; } else if (c === best) cands.push(i); }
+      const i = pick(rng, cands); chosen.add(i); b.dec[i] = rng() < 0.5 ? -1 : 1;
+    }
+    return b;
+  }
+  /** The walker's mutate(): weight flips that rarely silence, sensor-biased rewires,
+   *  bias / fire-bias steps, gain x0.82 or x1.22, vote moves and re-signs, and a rare jolt. */
+  function mutate(parent, rng, { strong = false } = {}) {
+    const b = cloneBrain(parent), N = b.N;
+    const n = Math.max(2, Math.round(N / 32)) * (strong ? 4 : 1);
+    const jolt = strong || rng() < RULE.jolt;
+    let ws = wiring(b);
+    const rel = relevant(b), target = () => (rel.length && rng() < RULE.focus ? pick(rng, rel) : rng.int(N));
+    for (let z = 0; z < n; z++) {
+      const i = target(), k = rng.int(3), x = 3 * i + k, u = rng();
+      if (u < RULE.weight) {
+        if (!b.w[x]) { b.w[x] = rng() < 0.5 ? -1 : 1; if (rng() < RULE.regrowRewire) b.src[x] = chooseSource(b, i, rng, ws); }
+        else if (rng() < RULE.silenceOdds) b.w[x] = 0;
+        else b.w[x] = -b.w[x];
+      } else if (u < RULE.rewire) { b.src[x] = chooseSource(b, i, rng, ws); ws = wiring(b); }
+      else if (u < RULE.bias) b.bias[i] = clamp(b.bias[i] + (rng() < 0.5 ? -1 : 1) * LIM.biasStep, -LIM.bias, LIM.bias);
+      else if (u < RULE.fireBias) { const c = 3 * i + rng.int(3); b.fb[c] = clamp(b.fb[c] + (rng() < 0.5 ? -1 : 1) * LIM.fireBiasStep, -LIM.fireBias, LIM.fireBias); }
+      else if (u < RULE.gain) b.gain[i] = clamp(b.gain[i] * (rng() < 0.5 ? LIM.gainDown : LIM.gainUp), LIM.gainMin, LIM.gainMax);
+      else if (b.dec[i]) {
+        if (rng() < 0.5) b.dec[i] = -b.dec[i];
+        else { const zeros = []; for (let j = 0; j < N; j++) if (!b.dec[j]) zeros.push(j); if (zeros.length) { const j = pick(rng, zeros); b.dec[j] = rng() < 0.5 ? -1 : 1; b.dec[i] = 0; } }
+      } else { const on = []; for (let j = 0; j < N; j++) if (b.dec[j]) on.push(j); if (on.length) { const j = pick(rng, on); b.dec[j] = 0; b.dec[i] = rng() < 0.5 ? -1 : 1; } }
+    }
+    if (jolt) {
+      const extra = Math.max(2, Math.round(n * RULE.joltScale));
+      for (let z = 0; z < extra; z++) { const i = target(), x = 3 * i + rng.int(3); b.src[x] = chooseSource(b, i, rng, ws); b.w[x] = rng() < RULE.silenceOdds ? 0 : rng() < 0.5 ? -1 : 1; }
+      ws = wiring(b);
+    }
+    for (let i = 0; i < N; i++) repairDuplicates(b, i, rng, ws);
+    repairVotes(b, rng);
+    return b;
+  }
+  /** Unit-block crossover: a contiguous block of 20-60 % of the units, taken whole from the second parent. */
+  function crossover(a, b2, rng) {
+    if (a.N !== b2.N || a.V !== b2.V) return cloneBrain(a);
+    const A = cloneBrain(a), N = A.N, cut = rng.int(N), len = Math.max(1, Math.floor(N * (0.2 + rng() * 0.4)));
+    for (let t = 0; t < len; t++) {
+      const i = (cut + t) % N;
+      for (let k = 0; k < 3; k++) { A.src[3 * i + k] = b2.src[3 * i + k]; A.w[3 * i + k] = b2.w[3 * i + k]; A.fb[3 * i + k] = b2.fb[3 * i + k]; }
+      A.bias[i] = b2.bias[i]; A.gain[i] = b2.gain[i]; A.dec[i] = b2.dec[i];
+    }
+    const ws = wiring(A);
+    for (let i = 0; i < N; i++) repairDuplicates(A, i, rng, ws);
+    repairVotes(A, rng);
+    return A;
+  }
+  /** Functional distance: a count of differing live slots, signs and votes (never a percentage). */
+  function distance(a, b) {
+    if (a.N !== b.N) return Infinity;
+    let d = 0;
+    for (let x = 0; x < 3 * a.N; x++) { if (a.w[x] !== b.w[x]) d++; else if (a.w[x] && a.src[x] !== b.src[x]) d++; }
+    for (let i = 0; i < a.N; i++) if (a.dec[i] !== b.dec[i]) d++;
+    return d;
+  }
+  /** Grow a brain to N2 units, the walker's way: new units go at the end, so no existing source is
+   *  renumbered. Each new unit gets three live sensor slots but no votes, and nothing reads it yet,
+   *  so the grown brain plays exactly like the original until evolution recruits the new units. */
+  function grow(b, N2, rng) {
+    if (N2 <= b.N) return cloneBrain(b);
+    const g = emptyBrain(N2, b.V), N = b.N, remap = (src) => (src < S ? src : src + 0);
+    for (let x = 0; x < 3 * N; x++) { g.src[x] = remap(b.src[x]); g.w[x] = b.w[x]; g.fb[x] = b.fb[x]; }
+    for (let i = 0; i < N; i++) { g.bias[i] = b.bias[i]; g.gain[i] = b.gain[i]; g.dec[i] = b.dec[i]; }
+    for (let i = N; i < N2; i++) {
+      const used = new Set();
+      for (let k = 0; k < 3; k++) { let c, t = 0; do { c = KEY[(i * 3 + k + t) % KEY.length]; t++; } while (used.has(c) && t < 40); used.add(c); g.src[3 * i + k] = c; g.w[3 * i + k] = rng() < 0.5 ? -1 : 1; }
+    }
+    return g;
+  }
+  function liveFraction(b) { let n = 0; for (let x = 0; x < 3 * b.N; x++) if (b.w[x]) n++; return n / (3 * b.N); }
+
+  /** Run the unlayered network for R synchronous ticks on one ternary sensor vector. */
+  function makeNet(b, R) {
+    const N = b.N, inp = new Int8Array(S + N), h = new Int8Array(N);
+    const voters = [], signs = [];
+    for (let i = 0; i < N; i++) if (b.dec[i]) { voters.push(i); signs.push(b.dec[i]); }
+    return function run(s) {
+      inp.set(s, 0); inp.fill(0, S);
+      for (let t = 0; t < R; t++) {
+        for (let i = 0; i < N; i++) {
+          let z = b.bias[i];
+          const k0 = 3 * i;
+          for (let k = 0; k < 3; k++) { const wk = b.w[k0 + k]; if (wk) z += wk * inp[b.src[k0 + k]]; }
+          const zz = z > ZC ? ZC : z < -ZC ? -ZC : z, d = (b.gain[i] * zz) / DECT, r0 = b.fb[k0] - d, r1 = b.fb[k0 + 1], r2 = b.fb[k0 + 2] + d;
+          h[i] = r0 > r1 && r0 >= r2 ? -1 : r2 > r1 && r2 > r0 ? 1 : 0;
+        }
+        inp.set(h, S);
+      }
+      let v = 0;
+      for (let j = 0; j < voters.length; j++) v += signs[j] * h[voters[j]];
+      return v;
+    };
+  }
+
+  // ------------------------------------------------------------------ the bot
+  class TernaryBot extends C8.Bot {
+    constructor(game, me, brain, prior, rng, R = 3) {
+      super(game, me, prior, rng);
+      const N = game.b.N;
+      this.brain = brain; this.run = makeNet(brain, R);
+      this.mult = Array.from({ length: 2 * brain.V + 1 }, (_, j) => Math.pow(3, (j - brain.V) / brain.V));
+      this.F = new Int16Array(N * 8); this.tot = new Int32Array(8);
+      this.ver = new Int32Array(N); this.cache = new Int8Array(N); this.cver = new Int32Array(N).fill(-1); this.cglob = new Int32Array(N).fill(-1);
+      this.glob = 0; this.globKey = ''; this.s = new Int8Array(S); this.ctx = null;
+      const k = game.b.k, K = k + 1;
+      this.slot = new Int8Array(K * K).fill(-1);
+      for (let o = 1; o <= k; o++) { const m = k - o; if (m >= 2) { this.slot[o * K] = Math.min(m, 5) - 2; this.slot[o] = 4 + Math.min(m, 5) - 2; } }
+      this._fromBoard();
+    }
+    _fromBoard() {
+      const g = this.g, b = g.b, k = b.k, K = k + 1, me = this.me, op = 3 - me;
+      this.F.fill(0); this.tot.fill(0);
+      for (let w = 0; w < b.W; w++) {
+        const s = this.slot[g.cnt[me][w] * K + g.cnt[op][w]];
+        if (s < 0) continue;
+        this.tot[s]++;
+        for (let t = 0; t < k; t++) this.F[b.wc[w * k + t] * 8 + s]++;
+      }
+    }
+    onWindow(w, p, o, qq) {
+      super.onWindow(w, p, o, qq);
+      if (!this.F) return;
+      const k = this.g.b.k, K = k + 1;
+      let before, after;
+      if (p === this.me) { before = this.slot[o * K + qq]; after = this.slot[(o + 1) * K + qq]; }
+      else { before = this.slot[qq * K + o]; after = this.slot[qq * K + o + 1]; }
+      if (before === after) return;
+      if (before >= 0) this.tot[before]--;
+      if (after >= 0) this.tot[after]++;
+      const wc = this.g.b.wc, base = w * k;
+      for (let t = 0; t < k; t++) { const e = wc[base + t]; if (before >= 0) this.F[e * 8 + before]--; if (after >= 0) this.F[e * 8 + after]++; this.ver[e]++; }
+    }
+    onMove(c) { const nb = this.g.b.nb; for (let j = 0; j < 8; j++) { const e = nb[c * 8 + j]; if (e >= 0) this.ver[e]++; } }
+    prepare() {
+      const g = this.g, b = g.b, me = this.me, op = 3 - me;
+      const minePending = new Set(g.winCells(me, false)), theirPending = new Set(g.winCells(op, false));
+      const doors = new Set(), ownDoors = new Set();
+      for (const e of theirPending) for (let j = 0; j < 8; j++) { const c = b.nb[e * 8 + j]; if (c >= 0 && g.legalPos[c] >= 0) doors.add(c); }
+      for (const e of minePending) for (let j = 0; j < 8; j++) { const c = b.nb[e * 8 + j]; if (c >= 0 && g.legalPos[c] >= 0) ownDoors.add(c); }
+      const phase = g.moves.length < 30 ? -1 : g.moves.length < 150 ? 0 : 1;
+      const diff = this.tot[0] + this.tot[1] - (this.tot[4] + this.tot[5]);
+      const pressure = diff > 1 ? 1 : diff < -1 ? -1 : 0;
+      const key = phase + ':' + pressure;
+      if (key !== this.globKey) { this.globKey = key; this.glob++; }
+      this.ctx = { minePending, theirPending, doors, ownDoors, phase, pressure };
+    }
+    _volatile(c) { const g = this.g, ctx = this.ctx; return g.warm[this.me][c] > 0 || g.warm[3 - this.me][c] > 0 || ctx.doors.has(c) || ctx.ownDoors.has(c); }
+    sense(c, vol) {
+      const g = this.g, b = g.b, s = this.s, F = this.F, base = c * 8, me = this.me, op = 3 - me, ctx = this.ctx;
+      for (let j = 0; j < 8; j++) s[j] = tri3(F[base + j]);
+      let own = 0, their = 0;
+      for (let j = 0; j < 8; j++) { const e = b.nb[c * 8 + j]; if (e >= 0) { const v = g.cells[e]; if (v === me) own++; else if (v === op) their++; } }
+      s[8] = tri3(Math.min(own, 2)); s[9] = tri3(Math.min(their, 2));
+      s[10] = vol ? tri3(Math.min(2, this.threatsAfter(c, me, ctx.minePending))) : -1;
+      s[11] = vol ? tri3(Math.min(2, this.threatsAfter(c, op, ctx.theirPending))) : -1;
+      s[12] = ctx.doors.has(c) ? 1 : -1; s[13] = ctx.ownDoors.has(c) ? 1 : -1;
+      s[14] = ctx.phase; s[15] = ctx.pressure; s[16] = 1;
+      return s;
+    }
+    priority(c) {
+      if (!this.ctx) this.prepare();
+      const vol = this._volatile(c);
+      if (!vol && this.cver[c] === this.ver[c] && this.cglob[c] === this.glob) return this.cache[c];
+      const v = this.run(this.sense(c, vol));
+      if (!vol) { this.cache[c] = v; this.cver[c] = this.ver[c]; this.cglob[c] = this.glob; }
+      return v;
+    }
+    score(c) { return this.S[c] * this.mult[this.priority(c) + this.brain.V]; }
+  }
+
+  // ------------------------------------------------------------------ ACBA-style latent probes
+  /* Mirrored probes share a parent and loci and take opposite signs; the better
+   * result nudges the parent's float shadow toward that direction, but only
+   * within the bin of its actual ternary gene. Only strict ternary brains play. */
+  class Acba {
+    constructor() { this.shadows = new WeakMap(); this.stats = { pairs: 0, plus: 0, minus: 0, ties: 0 }; }
+    loci(b) { const L = []; for (let x = 0; x < 3 * b.N; x++) L.push(x); for (let i = 0; i < b.N; i++) if (b.dec[i]) L.push(3 * b.N + i); return L; }
+    value(b, j) { return j < 3 * b.N ? b.w[j] : b.dec[j - 3 * b.N]; }
+    isVote(b, j) { return j >= 3 * b.N; }
+    center(v, vote) { return vote ? (v > 0 ? 0.55 : -0.55) : v * 0.85; }
+    project(x, vote) { return vote ? (x < 0 ? -1 : 1) : x > 0.5 ? 1 : x < -0.5 ? -1 : 0; }
+    safeBin(x, sign, vote) { return vote ? (sign === 1 ? clamp(x, 0.001, 2) : clamp(x, -2, -0.001)) : sign === 1 ? clamp(x, 0.5001, 2) : sign === -1 ? clamp(x, -2, -0.5001) : clamp(x, -0.4999, 0.4999); }
+    shadow(b) {
+      let s = this.shadows.get(b);
+      if (!s) { s = new Float32Array(4 * b.N); for (const j of this.loci(b)) s[j] = this.center(this.value(b, j), this.isVote(b, j)); this.shadows.set(b, s); }
+      return s;
+    }
+    set(b, j, v) { if (j < 3 * b.N) b.w[j] = v; else b.dec[j - 3 * b.N] = v; }
+    pair(parent, rng, { moves = 4, step = 0.57 } = {}) {
+      const L = this.loci(parent), s = this.shadow(parent);
+      const plus = Float32Array.from(s), minus = Float32Array.from(s), gp = cloneBrain(parent), gm = cloneBrain(parent), chosen = [], used = new Set();
+      for (let t = 0; t < moves; t++) {
+        let j = pick(rng, L), tries = 0;
+        while (used.has(j) && tries++ < 15) j = pick(rng, L);
+        if (used.has(j)) continue;
+        used.add(j);
+        const dir = rng() < 0.5 ? -1 : 1, amt = step * (0.8 + 0.65 * rng()), vote = this.isVote(parent, j);
+        plus[j] = clamp(s[j] + dir * amt, -1.9, 1.9); minus[j] = clamp(s[j] - dir * amt, -1.9, 1.9);
+        this.set(gp, j, this.project(plus[j], vote)); this.set(gm, j, this.project(minus[j], vote));
+        chosen.push({ j, dir, vote });
+      }
+      if (chosen.length && chosen.every(({ j }) => this.value(gp, j) === this.value(parent, j) && this.value(gm, j) === this.value(parent, j))) {
+        const { j, dir, vote } = chosen[0], v = this.value(parent, j);
+        const nv = vote ? -v : v === 0 ? dir : 0;
+        this.set(gp, j, nv); plus[j] = this.center(nv, vote);
+      }
+      for (const g of [gp, gm]) { const ws = wiring(g); for (let i = 0; i < g.N; i++) repairDuplicates(g, i, rng, ws); }
+      this.shadows.set(gp, plus); this.shadows.set(gm, minus);
+      return { parent, plus: gp, minus: gm, chosen };
+    }
+    credit(pair, a, b) {
+      if (!pair || !Number.isFinite(a) || !Number.isFinite(b)) return;
+      this.stats.pairs++;
+      const d = a - b;
+      if (Math.abs(d) < 1e-10) { this.stats.ties++; return; }
+      if (d > 0) this.stats.plus++; else this.stats.minus++;
+      const s = this.shadow(pair.parent), delta = Math.sign(d) * clamp(Math.abs(d) / (0.03 + Math.max(Math.abs(a), Math.abs(b)) * 0.08), 0, 1) * 0.2;
+      for (const { j, dir, vote } of pair.chosen) s[j] = this.safeBin(s[j] + dir * delta, this.value(pair.parent, j), vote);
+    }
+  }
+
+  // ------------------------------------------------------------------ matches
+  /** spec: { kind: 'linear', genome } or { kind: 'ternary', brain, prior }. */
+  function agent(game, me, spec, rng) {
+    return spec.kind === 'ternary' ? new TernaryBot(game, me, spec.brain, spec.prior, rng) : new C8.Bot(game, me, spec.genome, rng);
+  }
+  /**
+   * One game. Besides the result, counts forcing threats each side made (moves after which that
+   * side had a playable winning cell) and how diagonal each side's strong lines were.
+   */
+  function playMatch(board, specA, specB, seed, { cap = 360, opening = 4, game = null } = {}) {
+    const g = game || new C8.Game(board);
+    g.reset(); g.listeners.length = 0;
+    const rng = C8.makeRng(seed);
+    const A = agent(g, 1, specA, rng), B = agent(g, 2, specB, rng);
+    const threats = [0, 0, 0];
+    while (!g.winner && g.moves.length < cap) {
+      const p = g.turn;
+      const c = g.moves.length > 0 && g.moves.length < opening ? g.legalList[rng.int(g.nLegal)] : (p === 1 ? A : B).choose();
+      if (A.ctx) A.ctx = null; if (B.ctx) B.ctx = null;
+      g.play(c);
+      if (g.winCells(p, true).length) threats[p]++;
+    }
+    const diag = [0, 0, 0], k = board.k;
+    for (const p of [1, 2]) {
+      let strong = 0, dg = 0;
+      for (let w = 0; w < board.W; w++) if (g.cnt[p][w] >= Math.max(3, k - 4) && g.cnt[3 - p][w] === 0) { strong++; const u = board.dirs[board.wdir[w]]; if (u.filter((x) => x !== 0).length >= 2) dg++; }
+      diag[p] = strong ? dg / strong : 0.5;
+    }
+    return { result: g.winner > 0 ? g.winner : 0, moves: g.moves.length, threats, diag };
+  }
+  /** Smooth-gated score for one side: wins near 1, losses near 0, draws graded by forcing pressure. */
+  function smooth(r, side, cap) {
+    const len = Math.min(1, r.moves / cap);
+    if (r.result === side) return 0.85 + 0.15 * (1 - len);
+    if (r.result === 3 - side) return 0.15 * len;
+    return 0.5 + 0.2 * Math.tanh((r.threats[side] - r.threats[3 - side]) / 3);
+  }
+
+  // ------------------------------------------------------------------ the champion archive (MAP-Elites)
+  class Archive {
+    constructor({ bins = 5, cap = 60, poolSize = 6, poolMinDiff = 4 } = {}) {
+      this.axes = ['aggression', 'diagonal']; this.ranges = { aggression: [0.2, 0.6], diagonal: [0.3, 0.7] };
+      this.bins = bins; this.cap = cap; this.poolSize = poolSize; this.poolMinDiff = poolMinDiff;
+      this.cells = new Map(); this.pool = []; this.serial = 0; this.admissions = { new: 0, improved: 0, rejected: 0 };
+    }
+    key(cell) { return cell.join('|'); }
+    noteDesc(d) { let widened = false; for (const k of this.axes) { const v = clamp(d[k], 0, 1), r = this.ranges[k]; if (v < r[0]) { r[0] = v; widened = true; } if (v > r[1]) { r[1] = v; widened = true; } } return widened; }
+    binOf(d) { return this.axes.map((k) => { const [lo, hi] = this.ranges[k], span = Math.max(1e-6, hi - lo); return Math.min(this.bins - 1, Math.max(0, Math.floor(((clamp(d[k], lo, hi) - lo) / span) * this.bins * 0.999999))); }); }
+    hasCellFor(d) { return this.cells.has(this.key(this.binOf(d))); }
+    rebin() { const all = [...this.cells.values()]; this.cells = new Map(); for (const e of all) { e.cell = this.binOf(e.desc); const k = this.key(e.cell), cur = this.cells.get(k); if (!cur || e.quality > cur.quality) this.cells.set(k, e); } }
+    tryAdd(entry) {
+      if (this.noteDesc(entry.desc)) this.rebin();
+      const cell = this.binOf(entry.desc), k = this.key(cell), cur = this.cells.get(k);
+      if (!cur || entry.quality > cur.quality + 1e-12) {
+        this.cells.set(k, { ...entry, id: ++this.serial, cell });
+        while (this.cells.size > this.cap) { let worst = null; for (const [kk, e] of this.cells) if (!worst || e.quality < worst[1].quality) worst = [kk, e]; this.cells.delete(worst[0]); }
+        const r = cur ? 'improved' : 'new'; this.admissions[r]++; return r;
+      }
+      this.admissions.rejected++; return false;
+    }
+    ranked() { return [...this.cells.values()].sort((a, b) => b.quality - a.quality); }
+    best() { return this.ranked()[0] || null; }
+    derivePool() {
+      const all = this.ranked(), picked = [];
+      for (const e of all) { if (picked.length >= this.poolSize) break; if (picked.some((p) => distance(p.brain, e.brain) < this.poolMinDiff)) continue; picked.push(e); }
+      for (const e of all) { if (picked.length >= this.poolSize) break; if (!picked.includes(e)) picked.push(e); }
+      this.pool = picked; return picked;
+    }
+    pickPool(rng, selExp = 1.8) { const p = this.pool; return p.length ? p[Math.min(p.length - 1, Math.floor(Math.pow(rng(), selExp) * p.length))] : null; }
+    pickAny(rng) { const a = [...this.cells.values()]; return a.length ? a[rng.int(a.length)] : null; }
+  }
+
+  // ------------------------------------------------------------------ champion evolution
+  /**
+   * One run of champion evolution, the walker's ChampionRun.step() on games:
+   * founders on the fixed validation suite; each generation lambda candidates,
+   * a share of them mirrored ACBA probe pairs on the current brain, the rest
+   * mutants of the current brain, a pool champion or an archive cell, some
+   * crossed with a second champion; the best replaces the current brain only if
+   * it beats it on the same training suite. Validation feeds the archive, along
+   * with the best explorer that lands in an empty behaviour cell and periodic
+   * immigrants. Stagnation triggers a revisit from a strongly mutated champion.
+   * Written as a generator that yields after every game, so a page can run it
+   * a few milliseconds at a time.
+   */
+  class ChampionRun {
+    constructor(board, opts = {}) {
+      this.b = board;
+      this.cfg = Object.assign({ N: 16, V: 6, lambda: 10, founders: 6, acbaShare: 0.4, acbaMoves: 4, acbaStep: 0.57, revisitPct: 30, archivePct: 20, crossPct: 25, selExp: 1.8,
+        strongEvery: 5, valEvery: 2, immigrants: 1, immigrantEvery: 6, threshold: 10, rotate: 3, trainOpenings: 3, valOpenings: 6, cap: 360 }, opts.cfg || {});
+      this.seed = opts.seed || C8.freshSeed();
+      this.rng = C8.makeRng(this.seed);
+      this.prior = opts.prior || C8.BASELINE;
+      this.opponents = opts.opponents || [{ kind: 'linear', genome: C8.BASELINE, label: 'hand-tuned' }];
+      this.archive = new Archive();
+      this.acba = new Acba();
+      this.game = new C8.Game(board);
+      this.generation = 0; this.stagnation = 0; this.epoch = -1; this.current = opts.brain || null; this.currentTrain = null;
+      this.history = []; this.events = []; this.games = 0; this.improvements = 0;
+      this.wins = { current: 0, pool: 0, archive: 0, precision: 0, crossover: 0, strong: 0 };
+      this.lastGame = null; this.phase = 'starting';
+      this.it = this._loop();
+    }
+    spec(brain) { return { kind: 'ternary', brain, prior: this.prior }; }
+    suite(epoch, n, salt) {
+      const games = [];
+      for (let o = 0; o < n; o++) for (const opp of this.opponents) for (const first of [true, false]) games.push({ opp, first, seed: (this.seed ^ salt) + epoch * 7919 + o * 104729 });
+      return games;
+    }
+    *_score(brains, suite) {
+      const out = [];
+      for (const brain of brains) {
+        let sum = 0, thr = 0, mv = 0, dg = 0, w = 0, d = 0, l = 0;
+        for (const t of suite) {
+          const me = t.first ? 1 : 2;
+          const r = playMatch(this.b, t.first ? this.spec(brain) : t.opp, t.first ? t.opp : this.spec(brain), t.seed, { cap: this.cfg.cap, game: this.game });
+          this.games++;
+          this.lastGame = { moves: r.moves, result: r.result, me, opp: t.opp.label };
+          sum += smooth(r, me, this.cfg.cap); thr += r.threats[me]; mv += Math.ceil(r.moves / 2); dg += r.diag[me];
+          if (r.result === me) w++; else if (r.result === 0) d++; else l++;
+          yield 'game';
+        }
+        const n = suite.length;
+        out.push({ selection: sum / n, quality: sum / n, w, d, l, desc: { aggression: clamp((thr / Math.max(1, mv)) * 8, 0, 1), diagonal: dg / n } });
+      }
+      return out;
+    }
+    _pickParent() {
+      const c = this.cfg, a = this.archive;
+      if (this.rng() * 100 < c.revisitPct) {
+        if (this.rng() * 100 < c.archivePct) { const e = a.pickAny(this.rng); if (e) return { brain: e.brain, from: 'archive' }; }
+        const e = a.pickPool(this.rng, c.selExp); if (e) return { brain: e.brain, from: 'pool' };
+      }
+      return { brain: this.current, from: 'current' };
+    }
+    *_loop() {
+      const c = this.cfg, val = this.suite(0, c.valOpenings, 0x5a5a);
+      // founders: independent newborns on the fixed validation suite
+      this.phase = 'founders';
+      const founders = this.current ? [this.current, ...Array.from({ length: c.founders - 1 }, () => mutate(this.current, this.rng, { strong: true }))] : Array.from({ length: c.founders }, () => birth(this.rng, c.N, c.V));
+      const fv = yield* this._score(founders, val);
+      founders.forEach((brain, k) => this.archive.tryAdd({ brain, quality: fv[k].quality, desc: fv[k].desc, record: fv[k], generation: 0, founder: k }));
+      this.archive.derivePool();
+      let best = 0; fv.forEach((v, k) => { if (v.quality > fv[best].quality) best = k; });
+      this.current = founders[best]; this.currentVal = fv[best]; this.lastValidated = this.current;
+      this._record(true);
+      for (;;) {
+        this.phase = 'evolving';
+        const epoch = c.rotate > 0 ? Math.floor(this.generation / c.rotate) : 0;
+        if (epoch !== this.epoch) { this.epoch = epoch; this.train = this.suite(epoch + 1, c.trainOpenings, 0x1234); this.currentTrain = null; }
+        const cands = [], meta = [], pairs = [];
+        const nPairs = Math.min(Math.floor(c.lambda / 2), Math.floor((c.lambda * c.acbaShare) / 2));
+        for (let k = 0; k < nPairs; k++) {
+          const pr = this.acba.pair(this.current, this.rng, { moves: c.acbaMoves, step: c.acbaStep });
+          pairs.push({ pr, i: cands.length });
+          cands.push(pr.plus, pr.minus); meta.push({ from: 'precision' }, { from: 'precision' });
+        }
+        for (let i = cands.length; i < c.lambda; i++) {
+          const par = this._pickParent();
+          let base = par.brain, crossed = false;
+          if (this.archive.pool.length > 1 && this.rng() * 100 < c.crossPct) { const o = this.archive.pickPool(this.rng, c.selExp); if (o && o.brain !== base) { base = crossover(base, o.brain, this.rng); crossed = true; } }
+          const strong = c.strongEvery > 0 && i === c.lambda - 1 && this.generation % c.strongEvery === c.strongEvery - 1;
+          cands.push(mutate(base, this.rng, { strong })); meta.push({ from: par.from, crossed, strong });
+        }
+        const batch = this.currentTrain ? cands : [this.current, ...cands];
+        const scored = yield* this._score(batch, this.train);
+        if (!this.currentTrain) this.currentTrain = scored.shift();
+        for (const { pr, i } of pairs) this.acba.credit(pr, scored[i].selection, scored[i + 1].selection);
+        let win = -1, winSel = this.currentTrain.selection, explorer = -1, expSel = -Infinity;
+        scored.forEach((s, i) => { if (!this.archive.hasCellFor(s.desc) && s.selection > expSel) { explorer = i; expSel = s.selection; } if (s.selection > winSel) { win = i; winSel = s.selection; } });
+        if (win >= 0) { const m = meta[win]; this.current = cands[win]; this.currentTrain = scored[win]; this.stagnation = 0; this.improvements++; this.wins[m.from]++; if (m.crossed) this.wins.crossover++; if (m.strong) this.wins.strong++; }
+        else this.stagnation++;
+        this.generation++;
+        if (this.generation % c.valEvery === 0) {
+          this.phase = 'validating';
+          const toVal = [];
+          if (this.lastValidated !== this.current) toVal.push(this.current);
+          if (explorer >= 0 && cands[explorer] !== this.current) toVal.push(cands[explorer]);
+          if (c.immigrants > 0 && this.generation % c.immigrantEvery === 0) for (let i = 0; i < c.immigrants; i++) toVal.push(birth(this.rng, c.N, c.V));
+          if (toVal.length) {
+            const vs = yield* this._score(toVal, val);
+            toVal.forEach((brain, k) => { const r = this.archive.tryAdd({ brain, quality: vs[k].quality, desc: vs[k].desc, record: vs[k], generation: this.generation }); if (r) this.events.push({ generation: this.generation, kind: r }); });
+            if (toVal[0] === this.current) { this.lastValidated = this.current; this.currentVal = vs[0]; }
+            this.archive.derivePool();
+          }
+          this._record(false);
+        }
+        if (this.stagnation >= c.threshold) {
+          const e = (this.rng() * 100 < c.archivePct ? this.archive.pickAny(this.rng) : null) || this.archive.pickPool(this.rng, c.selExp);
+          if (e) { this.current = mutate(e.brain, this.rng, { strong: true }); this.currentTrain = null; this.events.push({ generation: this.generation, kind: 'revisit' }); }
+          this.stagnation = 0;
+        }
+        yield 'generation';
+      }
+    }
+    _record() {
+      const best = this.archive.best();
+      this.history.push({
+        gen: this.generation, games: this.games, best: best ? best.quality : 0, bestRecord: best ? best.record : null,
+        current: this.currentVal ? this.currentVal.quality : 0, cells: this.archive.cells.size, pool: this.archive.pool.length,
+        poolQ: this.archive.pool.map((e) => e.quality),
+      });
+    }
+    /** Do up to ms milliseconds of work. Returns 'generation' when a generation finished. */
+    work(ms) {
+      const end = now() + ms;
+      let ev = 'game';
+      while (now() < end) { const r = this.it.next(); if (r.value === 'generation') { ev = 'generation'; break; } }
+      return ev;
+    }
+  }
+
+  // ------------------------------------------------------------------ serialisation
+  function encode(b) { return { N: b.N, V: b.V, src: Array.from(b.src), w: Array.from(b.w), bias: Array.from(b.bias, (x) => +x.toFixed(4)), fb: Array.from(b.fb, (x) => +x.toFixed(4)), gain: Array.from(b.gain, (x) => +x.toFixed(4)), dec: Array.from(b.dec) }; }
+  function decode(o) { return { N: o.N, V: o.V, src: Int16Array.from(o.src), w: Int8Array.from(o.w), bias: Float32Array.from(o.bias), fb: Float32Array.from(o.fb), gain: Float32Array.from(o.gain), dec: Int8Array.from(o.dec) }; }
+
+  return { SENSORS, S, birth, mutate, crossover, distance, grow, liveFraction, makeNet, TernaryBot, Acba, Archive, ChampionRun, playMatch, smooth, encode, decode, cloneBrain };
+})(typeof C8 !== 'undefined' ? C8 : require('./connect8.js'));
+
+
+</script>
+<script>
+(function () {
+  'use strict';
+  const PRESETS = {"5": [-0.8286, -0.4017, 1.4312, -1.1973, -0.5387, -0.3654, 1.3747, 0.5239, 0.0192, -0.2772, -0.79, 1.7699, 0.838, 0.836], "6": [-1.8177, -0.5155, 4.2333, 0.2857, -1.8471, -0.1396, -0.0611, 0.1988, -1.5493, -2.055, -4.1535, -3.2142, -0.1364, 0.6], "7": [0.2494, 6.8194, 5.8216, 4.8132, 3.3147, 1.9944, 0.9264, 6.7517, 5.5225, 4.1751, 3.3631, 1.7069, 0.4599, 6.4492], "8": [-2.3939, -1.0075, 3.4807, 2.0724, -1.5762, -1.5033, -2.4197, 1.3865, -1.765, -1.7206, -3.027, -2.1012, -1.9434, 1.8255]};
+  const TPRESET = {"8": {"brain": {"N": 16, "V": 6, "src": [1, 11, 25, 10, 29, 27, 0, 24, 27, 23, 6, 22, 16, 32, 31, 15, 5, 21, 12, 15, 29, 13, 17, 30, 8, 32, 19, 6, 7, 28, 9, 16, 31, 14, 25, 30, 4, 23, 20, 5, 18, 26, 15, 22, 18, 3, 20, 28], "w": [1, -1, -1, 1, 1, -1, 0, -1, 1, 1, 0, 0, -1, 1, 0, -1, -1, 1, -1, -1, 0, -1, 1, -1, -1, -1, -1, 0, -1, -1, 1, -1, 1, -1, -1, -1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, -1, 1], "bias": [0.25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "fb": [0, 0, 0, 0, 0, 0, 0, 0, -0.3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -0.3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.3, 0], "gain": [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 1.098], "dec": [1, 0, -1, 0, 0, 0, 0, -1, 1, 0, 0, 0, 0, -1, 0, -1]}, "validation": {"w": 4, "d": 8, "l": 0}}};
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => Array.from(document.querySelectorAll(s));
+  const now = () => performance.now();
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fmt = (n) => Math.round(n).toLocaleString('en-US');
+  const MAX_MOVES = 1200;
+  const NAMES = [null, 'Orange', 'Blue'];
+
+  // ------------------------------------------------------------ theme
+  const theme = {};
+  function readTheme() {
+    const cs = getComputedStyle(document.documentElement);
+    const g = (n) => cs.getPropertyValue(n).trim();
+    ['bg', 'surface', 'surface-2', 'line', 'line-strong', 'ink', 'ink-2', 'ink-3', 'accent', 'danger', 'ok', 'p1', 'p2'].forEach((k) => { theme[k] = g('--' + k); });
+    theme.axes = ['x', 'y', 'z', 'w'].map((a) => g('--ax-' + a));
+    theme.font = g('--font');
+    theme.player = [theme.ink, theme.p1, theme.p2];
+    markDirty();
+  }
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readTheme);
+  function alpha(color, a) {
+    if (color && color.startsWith('#') && color.length === 7) {
+      return `rgba(${parseInt(color.slice(1, 3), 16)},${parseInt(color.slice(3, 5), 16)},${parseInt(color.slice(5, 7), 16)},${a})`;
+    }
+    return color;
+  }
+  function fitCanvas(canvas, cssW, cssH) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(1, Math.round(cssW)), h = Math.max(1, Math.round(cssH));
+    if (canvas._w !== w || canvas._h !== h || canvas._dpr !== dpr) {
+      canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+      canvas.style.height = h + 'px';
+      canvas._w = w; canvas._h = h; canvas._dpr = dpr;
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return ctx;
+  }
+  const setStatus = (sel, text, tone) => { const el = $(sel); el.textContent = text || ''; el.classList.toggle('good', tone === 'good'); el.classList.toggle('bad', tone === 'bad'); };
+  const status = (t, tone) => setStatus('#status', t, tone);
+
+  // ------------------------------------------------------------ state
+  const state = {
+    k: 8, mode: 'human-first', brain: 'ternary', brain2: 'tuned',
+    b: null, game: null, bots: [null, null, null], humans: [false, true, false],
+    botDue: 0, paused: false, speed: 6, over: false, lastMove: -1, lastThink: null, hint: -1,
+    layout: 'all', focusZ: 5, focusW: 5, showDanger: true,
+    rot: { xw: 0.22, yw: 0.12, zw: 0.3, yaw: 0.6, pitch: -0.34 }, tumble: !reduceMotion, zoom: 1,
+    view: { cx: [5, 5, 5, 5], half: 1.5 }, crop: null,
+    hover: null, cursor: null,
+    info: { win: [null, [], []], doors: new Set(), longest: [0, 0, 0] },
+    ripple: null, tab: 'play', building: false,
+    trainer: null, evolving: false, trainK: 8, trainN: 16, champions: {}, lastChampionRef: null, frameNo: 0,
+  };
+  const boardCache = {};
+  const dirty = { tess: true, boards: true, read: true, evolve: true };
+  function markDirty() { dirty.tess = dirty.boards = dirty.read = dirty.evolve = true; }
+  const co = (i, a) => state.b.co[i * 4 + a];
+  const cellName = (i) => `(${co(i, 0)}, ${co(i, 1)}, ${co(i, 2)}, ${co(i, 3)})`;
+
+  function withBoard(k, then) {
+    if (boardCache[k]) { then(boardCache[k]); return; }
+    state.building = true;
+    $('#subline').textContent = `Building every line for ${k} in a row\u2026`;
+    setTimeout(() => { boardCache[k] = new C8.Board(11, k); state.building = false; then(boardCache[k]); }, 30);
+  }
+
+  // ------------------------------------------------------------ game flow
+  const priorFor = (k) => (k === 8 ? C8.BASELINE : PRESETS[k] || C8.BASELINE);
+  function specFor(which, k) {
+    if (which === 'naive') return { kind: 'linear', genome: C8.NAIVE };
+    if (which === 'tuned') return { kind: 'linear', genome: C8.BASELINE };
+    if (which === 'mine') { const c = championFor(k); if (c) return { kind: 'ternary', brain: T8.decode(c.brain), prior: priorFor(k) }; }
+    if (which === 'ternary' && TPRESET[k]) return { kind: 'ternary', brain: T8.decode(TPRESET[k].brain), prior: priorFor(k) };
+    return { kind: 'linear', genome: PRESETS[k] || PRESETS[8] };
+  }
+  function makeAgent(game, p, spec, rng) {
+    const bot = spec.kind === 'ternary' ? new T8.TernaryBot(game, p, spec.brain, spec.prior, rng) : new C8.Bot(game, p, spec.genome, rng);
+    bot.spec = spec;
+    return bot;
+  }
+  function championFor(k) { return state.champions[k] || null; }
+  const brainLabel = (w) => ({ naive: 'untrained', tuned: 'hand-tuned', evolved: 'evolved-weights', ternary: 'ternary champion', mine: 'your champion' })[w];
+
+  function newGame() {
+    const k = state.k;
+    withBoard(k, (board) => {
+      state.b = board;
+      state.game = new C8.Game(board);
+      const m = state.mode;
+      state.humans = [false, m === 'human-first' || m === 'hotseat', m === 'bot-first' || m === 'hotseat'];
+      state.bots = [null, null, null];
+      for (const p of [1, 2]) if (!state.humans[p]) {
+        let which = m === 'bots' && p === 2 ? state.brain2 : state.brain;
+        if (which === 'ternary' && !TPRESET[k]) which = 'evolved';
+        if (which === 'mine' && !championFor(k)) which = TPRESET[k] ? 'ternary' : 'evolved';
+        state.bots[p] = makeAgent(state.game, p, specFor(which, k), C8.makeRng(C8.freshSeed()));
+        state.bots[p].which = which;
+      }
+      state.over = false; state.lastMove = -1; state.hint = -1; state.ripple = null; state.paused = false; state.lastThink = null;
+      state.info = { win: [null, [], []], doors: new Set(), longest: [0, 0, 0] };
+      const c = (board.n - 1) >> 1;
+      state.crop = { lo: [c - 1, c - 1, c - 1, c - 1], hi: [c + 1, c + 1, c + 1, c + 1] };
+      state.view = { cx: [c, c, c, c], half: 2 };
+      state.focusZ = c; state.focusW = c; state.cursor = board.center;
+      $('#subline').textContent = `${k} in a row on an 11\u2074 board: ${fmt(board.N)} cells, ${fmt(board.W)} winning lines`;
+      fillSlicePicks();
+      $('#btn-pause').hidden = m !== 'bots'; $('#speed-wrap').hidden = m !== 'bots';
+      $('#btn-pause').textContent = 'Pause';
+      const lab = (p) => brainLabel(state.bots[p] ? state.bots[p].which : state.brain);
+      const opp = m === 'bots' ? `${lab(1)} orange against ${lab(2)} blue` : m === 'hotseat' ? 'two people' : `you against the ${lab(m === 'human-first' ? 2 : 1)} bot`;
+      status(`New game, ${opp}. The first stone goes in the centre.`);
+      scheduleBot();
+      updateTurn(); markDirty();
+    });
+  }
+  function scheduleBot() {
+    const g = state.game;
+    if (!g || state.over || state.humans[g.turn]) { state.botDue = 0; return; }
+    const delay = state.mode === 'bots' ? [1400, 900, 600, 400, 250, 150, 80, 40, 15, 0][state.speed - 1] : 380;
+    state.botDue = now() + delay;
+  }
+  function botMove() {
+    const g = state.game, bot = state.bots[g.turn];
+    const t0 = now();
+    const c = bot.choose();
+    state.lastThink = now() - t0;
+    playMove(c);
+  }
+  function playMove(c) {
+    const g = state.game;
+    if (!g.isLegal(c)) return false;
+    g.play(c);
+    state.lastMove = c; state.hint = -1;
+    for (let a = 0; a < 4; a++) { const v = co(c, a); state.crop.lo[a] = Math.max(0, Math.min(state.crop.lo[a], v - 1)); state.crop.hi[a] = Math.min(state.b.n - 1, Math.max(state.crop.hi[a], v + 1)); }
+    analyse();
+    if (g.winner > 0) {
+      state.over = true;
+      const who = g.winner;
+      const human = state.humans[who], other = state.humans[3 - who];
+      status(human && !other ? `You win with ${state.k} in a row after ${fmt(g.moves.length)} moves.` : !human && other ? `The bot wins with ${state.k} in a row after ${fmt(g.moves.length)} moves.` : `${NAMES[who]} wins with ${state.k} in a row after ${fmt(g.moves.length)} moves.`, human || state.mode === 'bots' ? 'good' : 'bad');
+      if (!reduceMotion) state.ripple = { t0: now(), line: g.lineOf(g.winWindow) };
+    } else if (g.winner === -1 || g.moves.length >= MAX_MOVES) {
+      state.over = true;
+      status(`Draw after ${fmt(g.moves.length)} moves. Long lines in four dimensions are very hard to finish against a careful blocker.`);
+    } else describeThreats();
+    scheduleBot();
+    updateTurn(); markDirty();
+    return true;
+  }
+  function analyse() {
+    const g = state.game, b = state.b;
+    const info = state.info;
+    info.win = [null, g.winCells(1, true), g.winCells(2, true)];
+    info.doors = new Set();
+    const mover = g.turn, opp = 3 - mover;
+    for (const e of g.winCells(opp, false)) for (let j = 0; j < 8; j++) { const c = b.nb[e * 8 + j]; if (c >= 0 && g.legalPos[c] >= 0) info.doors.add(c); }
+    // longest run through the last stone
+    const c = state.lastMove;
+    if (c >= 0) {
+      const p = g.cells[c], n = b.n;
+      for (const u of b.dirs) {
+        let run = 1;
+        for (const sgn of [1, -1]) {
+          let x = co(c, 0), y = co(c, 1), z = co(c, 2), w = co(c, 3);
+          for (;;) {
+            x += sgn * u[0]; y += sgn * u[1]; z += sgn * u[2]; w += sgn * u[3];
+            if (x < 0 || y < 0 || z < 0 || w < 0 || x >= n || y >= n || z >= n || w >= n) break;
+            if (g.cells[b.idx(x, y, z, w)] !== p) break;
+            run++;
+          }
+        }
+        if (run > info.longest[p]) info.longest[p] = run;
+      }
+    }
+  }
+  function describeThreats() {
+    const g = state.game, mover = g.turn, opp = 3 - mover, info = state.info;
+    const youMove = state.humans[mover] && !state.humans[opp];
+    if (info.win[mover].length) status(youMove ? `You can win right now at ${cellName(info.win[mover][0])}.` : `${NAMES[mover]} can win right now.`, youMove ? 'good' : undefined);
+    else if (info.win[opp].length) status(youMove ? `The bot threatens to win at ${cellName(info.win[opp][0])}. Block it.` : `${NAMES[mover]} must block ${cellName(info.win[opp][0])}.`, youMove ? 'bad' : undefined);
+    else if (info.doors.size && youMove) status(`Careful: ${info.doors.size === 1 ? 'one playable cell is a door' : info.doors.size + ' playable cells are doors'}. Touching ${info.doors.size === 1 ? 'it' : 'one'} would open a winning cell for the bot.`);
+    else if (youMove) status('');
+  }
+  function updateTurn() {
+    const g = state.game;
+    if (!g) return;
+    const p = g.turn;
+    $('#turn .stone').className = 'stone p' + (state.over && g.winner > 0 ? g.winner : p);
+    let text;
+    if (state.over) text = g.winner > 0 ? `${NAMES[g.winner]} wins` : 'Draw';
+    else if (state.humans[p] && !state.humans[3 - p]) text = 'Your move';
+    else if (state.humans[p]) text = `${NAMES[p]} to move`;
+    else text = state.mode === 'bots' ? `${NAMES[p]} bot is thinking` : 'The bot is thinking';
+    $('#turn-text').textContent = text;
+    const humanTurn = !state.over && state.humans[p];
+    $('#btn-hint').disabled = !humanTurn;
+    const humanMoved = g.moves.some((_, i) => state.humans[i % 2 === 0 ? 1 : 2]);
+    $('#btn-undo').disabled = state.mode === 'bots' || !humanMoved || (!humanTurn && !state.over);
+  }
+  function undo() {
+    const g = state.game;
+    if (!g || state.mode === 'bots') return;
+    // Take back moves until a human move has been undone and it is a human's turn again.
+    let n = g.moves.length, removedHuman = false;
+    while (n > 0) {
+      const mover = (n - 1) % 2 === 0 ? 1 : 2;
+      n--;
+      if (state.humans[mover]) removedHuman = true;
+      if (removedHuman && state.humans[n % 2 === 0 ? 1 : 2]) break;
+    }
+    const drop = g.moves.length - n;
+    const moves = g.moves.slice(0, n);
+    const fresh = new C8.Game(state.b);
+    const bots = [null, null, null];
+    for (const p of [1, 2]) if (state.bots[p]) { bots[p] = makeAgent(fresh, p, state.bots[p].spec, C8.makeRng(C8.freshSeed())); bots[p].which = state.bots[p].which; }
+    const c0 = (state.b.n - 1) >> 1;
+    state.crop = { lo: [c0 - 1, c0 - 1, c0 - 1, c0 - 1], hi: [c0 + 1, c0 + 1, c0 + 1, c0 + 1] };
+    state.info = { win: [null, [], []], doors: new Set(), longest: [0, 0, 0] };
+    state.game = fresh; state.bots = bots; state.over = false; state.ripple = null;
+    for (const m of moves) { fresh.play(m); state.lastMove = m; for (let a = 0; a < 4; a++) { const v = co(m, a); state.crop.lo[a] = Math.max(0, Math.min(state.crop.lo[a], v - 1)); state.crop.hi[a] = Math.min(state.b.n - 1, Math.max(state.crop.hi[a], v + 1)); } analyse(); }
+    if (!moves.length) state.lastMove = -1;
+    status('Took back the last move' + (drop > 1 ? 's.' : '.'));
+    scheduleBot(); updateTurn(); markDirty();
+  }
+  function hint() {
+    const g = state.game;
+    if (!g || state.over || !state.humans[g.turn]) return;
+    const helper = makeAgent(g, g.turn, specFor(TPRESET[state.k] ? 'ternary' : 'evolved', state.k), C8.makeRng(1));
+    const c = helper.choose();
+    helper.detach();
+    state.hint = c; state.cursor = c;
+    if (state.layout === 'one') { state.focusZ = co(c, 2); state.focusW = co(c, 3); syncSlicePicks(); }
+    status(`The ${TPRESET[state.k] ? 'ternary champion' : 'evolved bot'} would play ${cellName(c)}.`);
+    markDirty();
+  }
+
+  // ------------------------------------------------------------ 4D projection
+  const tess = { canvas: null, w: 0, h: 0, pts: [], drag: null };
+  function project(c4, out) {
+    const R = state.rot, V = state.view;
+    let x = (c4[0] - V.cx[0]) / V.half, y = (c4[1] - V.cx[1]) / V.half, z = (c4[2] - V.cx[2]) / V.half, w = (c4[3] - V.cx[3]) / V.half;
+    let a = x * Math.cos(R.xw) - w * Math.sin(R.xw); w = x * Math.sin(R.xw) + w * Math.cos(R.xw); x = a;
+    a = y * Math.cos(R.yw) - w * Math.sin(R.yw); w = y * Math.sin(R.yw) + w * Math.cos(R.yw); y = a;
+    a = z * Math.cos(R.zw) - w * Math.sin(R.zw); w = z * Math.sin(R.zw) + w * Math.cos(R.zw); z = a;
+    const f = 4 / (4 - Math.max(-1.8, Math.min(1.8, w)) * 0.75);
+    x *= f; y *= f; z *= f;
+    const cy = Math.cos(R.yaw), sy = Math.sin(R.yaw), cp = Math.cos(R.pitch), sp = Math.sin(R.pitch);
+    const x2 = x * cy + z * sy, z2 = -x * sy + z * cy;
+    const y2 = y * cp - z2 * sp, z3 = y * sp + z2 * cp;
+    const k = 8 / (8 - z3);
+    out[0] = tess.w / 2 + x2 * tess.scale * k; out[1] = tess.h / 2 - y2 * tess.scale * k; out[2] = z3; out[3] = k;
+  }
+  function updateViewTarget(dt) {
+    const cr = state.crop, V = state.view;
+    let half = 1.5;
+    for (let a = 0; a < 4; a++) {
+      const target = (cr.lo[a] + cr.hi[a]) / 2;
+      V.cx[a] += (target - V.cx[a]) * Math.min(1, dt * 0.006);
+      half = Math.max(half, (cr.hi[a] - cr.lo[a]) / 2 + 0.5);
+    }
+    V.half += (half - V.half) * Math.min(1, dt * 0.006);
+  }
+  function drawTess() {
+    dirty.tess = false;
+    const g = state.game;
+    if (!g) return;
+    const wrap = $('#tess-wrap');
+    const ctx = fitCanvas(tess.canvas, wrap.clientWidth, wrap.clientHeight);
+    tess.w = tess.canvas._w; tess.h = tess.canvas._h;
+    tess.scale = Math.min(tess.w, tess.h) * 0.21 * state.zoom;
+    ctx.fillStyle = theme.surface; ctx.fillRect(0, 0, tess.w, tess.h);
+    const P = [0, 0, 0, 0], V = state.view;
+    // frame: the bounding hypercube of the shown region
+    const cr = state.crop, corners = [];
+    for (let m = 0; m < 16; m++) { const q = [0, 0, 0, 0]; project([0, 1, 2, 3].map((a) => ((m >> a) & 1 ? cr.hi[a] + 0.5 : cr.lo[a] - 0.5)), q); corners.push(q); }
+    ctx.lineWidth = 1; ctx.strokeStyle = theme['line-strong']; ctx.globalAlpha = 0.55; ctx.beginPath();
+    for (let m = 0; m < 16; m++) for (let bit = 0; bit < 4; bit++) { const d = m ^ (1 << bit); if (d > m) { ctx.moveTo(corners[m][0], corners[m][1]); ctx.lineTo(corners[d][0], corners[d][1]); } }
+    ctx.stroke(); ctx.globalAlpha = 1;
+    // points: stones and playable cells
+    const pts = [];
+    const add = (c, kind) => { project([co(c, 0), co(c, 1), co(c, 2), co(c, 3)], P); pts.push({ c, kind, x: P[0], y: P[1], d: P[2], k: P[3] }); };
+    for (const c of g.moves) add(c, 'stone');
+    for (let i = 0; i < g.nLegal; i++) add(g.legalList[i], 'legal');
+    pts.sort((a, b) => a.d - b.d);
+    tess.pts = pts;
+    let dmin = Infinity, dmax = -Infinity;
+    for (const p of pts) { if (p.d < dmin) dmin = p.d; if (p.d > dmax) dmax = p.d; }
+    const span = dmax - dmin || 1;
+    const base = Math.max(2.2, Math.min(8, (Math.min(tess.w, tess.h) * 0.075) / Math.max(1.5, V.half)));
+    const win = state.info.win, doors = state.info.doors;
+    const winLine = g.winner > 0 ? new Set(g.lineOf(g.winWindow)) : null;
+    const active = state.hover !== null ? state.hover : null;
+    for (const p of pts) {
+      const fade = 0.4 + 0.6 * ((p.d - dmin) / span);
+      const r = base * p.k;
+      if (p.kind === 'stone') {
+        const who = g.cells[p.c];
+        ctx.globalAlpha = fade; ctx.fillStyle = theme.player[who];
+        ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 6.2832); ctx.fill();
+        if (winLine && winLine.has(p.c)) { ctx.globalAlpha = 1; ctx.lineWidth = 2.5; ctx.strokeStyle = theme.ink; ctx.stroke(); }
+      } else {
+        ctx.globalAlpha = fade * 0.75; ctx.fillStyle = theme.accent;
+        ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(1.2, r * 0.28), 0, 6.2832); ctx.fill();
+        if (state.showDanger && (win[1].includes(p.c) || win[2].includes(p.c))) { ctx.globalAlpha = 1; ctx.lineWidth = 2; ctx.strokeStyle = theme.danger; ctx.beginPath(); ctx.arc(p.x, p.y, r * 0.9, 0, 6.2832); ctx.stroke(); }
+        else if (state.showDanger && doors.has(p.c)) { ctx.globalAlpha = 0.9; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]); ctx.strokeStyle = theme.danger; ctx.beginPath(); ctx.arc(p.x, p.y, r * 0.9, 0, 6.2832); ctx.stroke(); ctx.setLineDash([]); }
+      }
+      if (p.c === state.lastMove || p.c === state.hint) { ctx.globalAlpha = 1; ctx.lineWidth = 2; ctx.strokeStyle = p.c === state.hint ? theme.accent : theme.ink; ctx.beginPath(); ctx.arc(p.x, p.y, r + 3.5, 0, 6.2832); ctx.stroke(); }
+      if (p.c === active) { ctx.globalAlpha = 1; ctx.lineWidth = 1.5; ctx.strokeStyle = theme['ink-2']; ctx.beginPath(); ctx.arc(p.x, p.y, r + 2, 0, 6.2832); ctx.stroke(); }
+    }
+    if (winLine) {
+      const line = g.lineOf(g.winWindow);
+      const a = [0, 0, 0, 0], z = [0, 0, 0, 0];
+      project([co(line[0], 0), co(line[0], 1), co(line[0], 2), co(line[0], 3)], a);
+      project([co(line[line.length - 1], 0), co(line[line.length - 1], 1), co(line[line.length - 1], 2), co(line[line.length - 1], 3)], z);
+      const pulse = state.ripple ? 0.5 + 0.5 * Math.sin((now() - state.ripple.t0) / 140) : 1;
+      ctx.globalAlpha = 0.85; ctx.lineWidth = 3 + 2 * pulse; ctx.strokeStyle = theme.player[g.winner];
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(z[0], z[1]); ctx.stroke();
+      if (state.ripple && now() - state.ripple.t0 > 2200) state.ripple = null;
+    }
+    ctx.globalAlpha = 1;
+  }
+  function tessHit(px, py, legalOnly) {
+    let best = null, bd = 13 * 13;
+    for (let n = tess.pts.length - 1; n >= 0; n--) {
+      const p = tess.pts[n];
+      if (legalOnly && p.kind !== 'legal') continue;
+      const dx = p.x - px, dy = p.y - py, d = dx * dx + dy * dy;
+      if (d < bd) { bd = d; best = p.c; if (d < 9) break; }
+    }
+    return best;
+  }
+  function initTessInput() {
+    const c = tess.canvas;
+    c.addEventListener('pointerdown', (e) => { tess.drag = { x: e.clientX, y: e.clientY, moved: 0 }; c.setPointerCapture(e.pointerId); });
+    c.addEventListener('pointermove', (e) => {
+      if (tess.drag) {
+        const dx = e.clientX - tess.drag.x, dy = e.clientY - tess.drag.y;
+        tess.drag.moved += Math.abs(dx) + Math.abs(dy);
+        tess.drag.x = e.clientX; tess.drag.y = e.clientY;
+        if (tess.drag.moved > 4) { c.classList.add('dragging'); state.rot.yaw += dx * 0.008; state.rot.pitch = Math.max(-1.5, Math.min(1.5, state.rot.pitch + dy * 0.008)); dirty.tess = true; }
+      } else if (e.pointerType === 'mouse') {
+        const r = c.getBoundingClientRect(), hit = tessHit(e.clientX - r.left, e.clientY - r.top, false);
+        if (hit !== state.hover) { state.hover = hit; dirty.tess = dirty.boards = true; }
+      }
+    });
+    c.addEventListener('pointerup', (e) => {
+      if (!tess.drag) return;
+      const moved = tess.drag.moved;
+      tess.drag = null; c.classList.remove('dragging');
+      if (moved > 4) return;
+      const r = c.getBoundingClientRect(), hit = tessHit(e.clientX - r.left, e.clientY - r.top, true);
+      if (hit !== null) humanPlay(hit);
+    });
+    c.addEventListener('pointercancel', () => { tess.drag = null; c.classList.remove('dragging'); });
+    c.addEventListener('pointerleave', () => { if (state.hover !== null) { state.hover = null; dirty.tess = dirty.boards = true; } });
+  }
+  function humanPlay(c) {
+    const g = state.game;
+    if (!g || state.over) return;
+    if (!state.humans[g.turn]) { status('Wait for the bot to move.'); return; }
+    if (!g.isLegal(c)) { status(g.cells[c] ? 'That cell is taken.' : 'Stones must share a face with a stone already on the board.', 'bad'); return; }
+    if (state.info.doors.has(c)) { /* allowed, but it will hand the bot a win */ }
+    state.cursor = c;
+    playMove(c);
+  }
+
+  // ------------------------------------------------------------ slice view
+  const sl = { canvas: null, L: null };
+  function sliceLayout(cssW) {
+    const cr = state.crop, one = state.layout === 'one';
+    const Lx = cr.hi[0] - cr.lo[0] + 1, Ly = cr.hi[1] - cr.lo[1] + 1, Lz = cr.hi[2] - cr.lo[2] + 1, Lw = cr.hi[3] - cr.lo[3] + 1;
+    const labelL = one ? 0 : 30, labelT = one ? 0 : 20;
+    const avail = Math.max(80, cssW - labelL - 2);
+    const across = one ? Lx : Lz * Lx;
+    let cs = Math.max(3, Math.min(one ? 46 : 34, Math.floor(avail / across)));
+    let gB = 0;
+    for (; cs > 3; cs--) { gB = one ? 0 : Math.max(5, Math.round(cs * 0.55)); const tot = one ? Lx * cs : Lz * Lx * cs + (Lz - 1) * gB; if (tot <= avail) break; }
+    const bw = Lx * cs, bh = Ly * cs;
+    return {
+      one, cs, gB, Lx, Ly, Lz, Lw, labelL, labelT, bw, bh,
+      width: labelL + (one ? bw : Lz * bw + (Lz - 1) * gB), height: labelT + (one ? bh : Lw * bh + (Lw - 1) * gB),
+      zs: one ? [state.focusZ] : Array.from({ length: Lz }, (_, i) => cr.lo[2] + i),
+      ws: one ? [state.focusW] : Array.from({ length: Lw }, (_, i) => cr.lo[3] + i),
+      ox: (z) => labelL + (one ? 0 : (z - cr.lo[2]) * (bw + gB)),
+      oy: (w) => labelT + (one ? 0 : (w - cr.lo[3]) * (bh + gB)),
+    };
+  }
+  function drawSlices() {
+    dirty.boards = false;
+    const g = state.game;
+    if (!g) return;
+    const wrap = $('#boards-wrap'), cssW = wrap.clientWidth - 28;
+    const L = (sl.L = sliceLayout(cssW));
+    const ctx = fitCanvas(sl.canvas, Math.min(cssW, L.width + 2), L.height + 2);
+    sl.canvas.style.width = Math.min(cssW, L.width + 2) + 'px';
+    ctx.fillStyle = theme.surface; ctx.fillRect(0, 0, L.width + 2, L.height + 2);
+    const cr = state.crop, b = state.b, info = state.info;
+    const winLine = g.winner > 0 ? new Set(g.lineOf(g.winWindow)) : null;
+    const humanTurn = !state.over && state.humans[g.turn];
+    if (!L.one) {
+      ctx.fillStyle = theme['ink-3']; ctx.font = `11px ${theme.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      for (const z of L.zs) ctx.fillText('z ' + z, L.ox(z) + L.bw / 2, L.labelT - 6);
+      ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      for (const w of L.ws) ctx.fillText('w ' + w, L.labelL - 5, L.oy(w) + L.bh / 2);
+    }
+    const focus = state.hover !== null ? state.hover : state.cursor;
+    const fc = focus !== null && focus >= 0 ? [co(focus, 0), co(focus, 1), co(focus, 2), co(focus, 3)] : null;
+    for (const w of L.ws) for (const z of L.zs) {
+      const ox = L.ox(z), oy = L.oy(w);
+      ctx.fillStyle = theme.line; ctx.fillRect(ox - 1, oy - 1, L.bw + 2, L.bh + 2);
+      for (let yy = 0; yy < L.Ly; yy++) for (let xx = 0; xx < L.Lx; xx++) {
+        const x = cr.lo[0] + xx, y = cr.lo[1] + yy, c = b.idx(x, y, z, w);
+        const px = ox + xx * L.cs, py = oy + yy * L.cs, s = L.cs - 1, cx = px + s / 2, cy = py + s / 2;
+        ctx.fillStyle = theme.surface; ctx.fillRect(px, py, s, s);
+        if (fc && c !== focus) {
+          let axis = -1;
+          if (y === fc[1] && z === fc[2] && w === fc[3]) axis = 0;
+          else if (x === fc[0] && z === fc[2] && w === fc[3]) axis = 1;
+          else if (x === fc[0] && y === fc[1] && w === fc[3]) axis = 2;
+          else if (x === fc[0] && y === fc[1] && z === fc[2]) axis = 3;
+          if (axis >= 0) { ctx.fillStyle = alpha(theme.axes[axis], 0.16); ctx.fillRect(px, py, s, s); }
+        }
+        const who = g.cells[c];
+        if (who) {
+          ctx.fillStyle = theme.player[who];
+          if (L.cs >= 8) { ctx.beginPath(); ctx.arc(cx, cy, s * 0.38, 0, 6.2832); ctx.fill(); }
+          else ctx.fillRect(px, py, s, s);
+          if (winLine && winLine.has(c)) { ctx.strokeStyle = theme.ink; ctx.lineWidth = 2.5; ctx.strokeRect(px + 1, py + 1, s - 2, s - 2); }
+        } else if (g.legalPos[c] >= 0) {
+          ctx.fillStyle = theme.accent; ctx.globalAlpha = 0.85;
+          ctx.beginPath(); ctx.arc(cx, cy, Math.max(1, s * 0.1), 0, 6.2832); ctx.fill(); ctx.globalAlpha = 1;
+          if (state.showDanger && L.cs >= 8) {
+            if (info.win[1].includes(c) || info.win[2].includes(c)) { ctx.strokeStyle = theme.danger; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, s * 0.36, 0, 6.2832); ctx.stroke(); }
+            else if (info.doors.has(c)) { ctx.strokeStyle = theme.danger; ctx.lineWidth = 1.5; ctx.setLineDash([3, 2]); ctx.beginPath(); ctx.arc(cx, cy, s * 0.36, 0, 6.2832); ctx.stroke(); ctx.setLineDash([]); }
+          }
+          if (humanTurn && c === focus && L.cs >= 8) { ctx.globalAlpha = 0.45; ctx.fillStyle = theme.player[g.turn]; ctx.beginPath(); ctx.arc(cx, cy, s * 0.38, 0, 6.2832); ctx.fill(); ctx.globalAlpha = 1; }
+        }
+        if (c === state.lastMove) { ctx.strokeStyle = theme.ink; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, s * 0.46, 0, 6.2832); ctx.stroke(); }
+        if (c === state.hint) { ctx.strokeStyle = theme.accent; ctx.lineWidth = 2.5; ctx.strokeRect(px + 1, py + 1, s - 2, s - 2); }
+        if (c === focus) { ctx.strokeStyle = theme['ink-2']; ctx.lineWidth = 1.5; ctx.strokeRect(px + 0.5, py + 0.5, s - 1, s - 1); }
+      }
+    }
+    const small = !L.one && L.cs < 12;
+    $('#board-hint').textContent = small
+      ? 'The cluster has grown, so cells are small. Switch to One slice for precise moves, or play by clicking the small dots in the 4D view.'
+      : 'Only the region around the cluster is shown. Slices are laid out by z across and w down; inside each slice x runs across and y runs down.';
+  }
+  function sliceHit(px, py) {
+    const L = sl.L, cr = state.crop;
+    if (!L) return null;
+    for (const w of L.ws) for (const z of L.zs) {
+      const ox = L.ox(z), oy = L.oy(w);
+      if (px < ox || py < oy || px >= ox + L.bw || py >= oy + L.bh) continue;
+      const xx = Math.floor((px - ox) / L.cs), yy = Math.floor((py - oy) / L.cs);
+      return state.b.idx(cr.lo[0] + xx, cr.lo[1] + yy, z, w);
+    }
+    return null;
+  }
+  function initSliceInput() {
+    const c = sl.canvas;
+    c.addEventListener('click', (e) => { const r = c.getBoundingClientRect(), hit = sliceHit(e.clientX - r.left, e.clientY - r.top); if (hit !== null) humanPlay(hit); });
+    c.addEventListener('mousemove', (e) => { const r = c.getBoundingClientRect(), hit = sliceHit(e.clientX - r.left, e.clientY - r.top); if (hit !== state.hover) { state.hover = hit; dirty.tess = dirty.boards = true; } });
+    c.addEventListener('mouseleave', () => { state.hover = null; dirty.tess = dirty.boards = true; });
+    c.addEventListener('keydown', (e) => {
+      const g = state.game;
+      if (!g) return;
+      const cr = state.crop;
+      let cur = state.cursor >= 0 ? state.cursor : state.b.center;
+      let p = [co(cur, 0), co(cur, 1), co(cur, 2), co(cur, 3)];
+      const move = (a, d) => { p[a] = Math.max(cr.lo[a], Math.min(cr.hi[a], p[a] + d)); };
+      const map = { ArrowLeft: [0, -1], ArrowRight: [0, 1], ArrowUp: [1, -1], ArrowDown: [1, 1] };
+      if (map[e.key]) {
+        e.preventDefault();
+        const [a, d] = map[e.key];
+        if (e.shiftKey) move(a + 2, d); else move(a, d);
+        state.cursor = state.b.idx(p[0], p[1], p[2], p[3]);
+        if (state.layout === 'one') { state.focusZ = p[2]; state.focusW = p[3]; syncSlicePicks(); }
+        const v = g.cells[state.cursor];
+        $('#cell-readout').textContent = `${cellName(state.cursor)}: ${v ? NAMES[v] : g.legalPos[state.cursor] >= 0 ? 'playable' : 'empty, not playable'}`;
+        dirty.tess = dirty.boards = true;
+      } else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); humanPlay(state.cursor); }
+    });
+  }
+  function fillSlicePicks() {
+    const n = state.b.n;
+    for (const id of ['#pick-z', '#pick-w']) $(id).innerHTML = Array.from({ length: n }, (_, i) => `<option value="${i}">${i}</option>`).join('');
+    syncSlicePicks();
+  }
+  function syncSlicePicks() { $('#pick-z').value = String(state.focusZ); $('#pick-w').value = String(state.focusW); }
+
+  // ------------------------------------------------------------ readouts
+  const cache = {};
+  const setText = (id, t) => { if (cache[id] !== t) { cache[id] = t; $(id).textContent = t; } };
+  function updateReadouts() {
+    dirty.read = false;
+    const g = state.game;
+    if (!g) return;
+    setText('#r-move', fmt(g.moves.length));
+    setText('#r-legal', fmt(g.nLegal));
+    setText('#r-l1', `${state.info.longest[1]} of ${state.k}`);
+    setText('#r-l2', `${state.info.longest[2]} of ${state.k}`);
+    setText('#r-think', state.lastThink === null ? '\u2013' : state.lastThink < 0.1 ? 'under 0.1 ms' : state.lastThink.toFixed(1) + ' ms');
+  }
+
+  // ------------------------------------------------------------ evolution: ternary champions
+  function opponentsFor(k) {
+    const o = [{ kind: 'linear', genome: C8.BASELINE, label: 'hand-tuned' }];
+    if (k !== 8 && PRESETS[k]) o.push({ kind: 'linear', genome: PRESETS[k], label: 'evolved weights' });
+    return o;
+  }
+  function newTrainer(fromPreset) {
+    const k = state.trainK;
+    withBoard(k, (board) => {
+      const N = state.trainN;
+      let seedBrain = fromPreset && TPRESET[k] ? T8.decode(TPRESET[k].brain) : null;
+      if (seedBrain && seedBrain.N < N) seedBrain = T8.grow(seedBrain, N, C8.makeRng(N));
+      state.trainer = new T8.ChampionRun(board, { prior: priorFor(k), opponents: opponentsFor(k), brain: seedBrain, cfg: Object.assign({ N }, k === 8 ? {} : { trainOpenings: 2, valOpenings: 3 }) });
+      state.lastChampionRef = null;
+      state.evolving = true;
+      if (state.game) $('#subline').textContent = `${state.k} in a row on an 11\u2074 board: ${fmt(state.b.N)} cells, ${fmt(state.b.W)} winning lines`;
+      setStatus('#evo-status', fromPreset && seedBrain ? `Scoring the pre-evolved champion${N > 16 ? `, grown to ${N} units,` : ''} and five strong mutants of it\u2026` : `Scoring six independent ${N}-unit founders on the validation suite\u2026`);
+      dirty.evolve = true;
+    });
+  }
+  function stepTrainer(ms) {
+    const tr = state.trainer;
+    const ev = tr.work(ms);
+    if (ev === 'generation') {
+      const best = tr.archive.best();
+      if (best && best !== state.lastChampionRef) {
+        state.lastChampionRef = best;
+        const k = tr.b.k;
+        state.champions[k] = { brain: T8.encode(best.brain), quality: best.quality, record: { w: best.record.w, d: best.record.d, l: best.record.l }, gen: tr.generation, k };
+        saveChampion(k);
+        updateChampionUI();
+      }
+      const h = tr.history[tr.history.length - 1];
+      if (h) setStatus('#evo-status', `Generation ${tr.generation}: best champion scores ${Math.round(h.best * 100)}% on validation, ${tr.archive.cells.size} styles in the archive.`);
+    } else if (tr.phase === 'founders') setStatus('#evo-status', `Scoring founders: ${fmt(tr.games)} games played\u2026`);
+    dirty.evolve = true;
+  }
+  function updateChampionUI() {
+    const k = state.k, c = championFor(k);
+    for (const [sel, lab] of [['input[name="brain"][value="mine"]', '#mine-label'], ['input[name="brain2"][value="mine"]', '#mine-label2']]) {
+      $(sel).disabled = !c;
+      $(lab).textContent = c ? `Your champion (gen ${c.gen})` : 'Your champion';
+    }
+    for (const sel of ['input[name="brain"][value="ternary"]', 'input[name="brain2"][value="ternary"]']) $(sel).disabled = !TPRESET[k];
+    const tc = championFor(state.trainK);
+    $('#evo-use').disabled = !tc; $('#evo-copy').disabled = !tc;
+    $('#e-champ').textContent = tc ? `${tc.record.w}W ${tc.record.d}D ${tc.record.l}L` : 'None yet';
+  }
+  function chartFrame(ctx, W, H, pad, yMin, yMax, ticks, yFmt, xMax) {
+    ctx.fillStyle = theme.surface; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = theme.line; ctx.lineWidth = 1; ctx.fillStyle = theme['ink-3']; ctx.font = `11px ${theme.font}`;
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (const v of ticks) { const y = pad.t + (1 - (v - yMin) / (yMax - yMin)) * (H - pad.t - pad.b); ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke(); ctx.fillText(yFmt(v), pad.l - 6, y); }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    const step = Math.max(1, Math.ceil(xMax / 6 / 5) * 5);
+    for (let gg = 0; gg <= xMax; gg += step) ctx.fillText(String(gg), pad.l + (gg / Math.max(1, xMax)) * (W - pad.l - pad.r), H - 4);
+    return { x: (gg) => pad.l + (gg / Math.max(1, xMax)) * (W - pad.l - pad.r), y: (v) => pad.t + (1 - (v - yMin) / (yMax - yMin)) * (H - pad.t - pad.b) };
+  }
+  function renderEvolve() {
+    dirty.evolve = false;
+    const tr = state.trainer, hist = tr ? tr.history : [];
+    $('#evo-run').textContent = state.evolving ? 'Pause' : tr ? 'Resume evolving' : 'Start evolving';
+    $('#evo-seed').disabled = !TPRESET[state.trainK];
+    $('#e-gen').textContent = tr ? fmt(tr.generation) : '0';
+    $('#e-games').textContent = tr ? fmt(tr.games) : '0';
+    $('#e-cells').textContent = tr ? fmt(tr.archive.cells.size) : '0';
+    $('#e-imp').textContent = tr ? fmt(tr.improvements) : '0';
+    updateChampionUI();
+    const xMax = Math.max(10, hist.length ? hist[hist.length - 1].gen : 0), pad = { l: 40, r: 12, t: 10, b: 20 };
+    {
+      const cv = $('#chart-q'), W = cv.parentElement.clientWidth - 32, H = 210, ctx = fitCanvas(cv, W, H);
+      const m = chartFrame(ctx, W, H, pad, 0, 100, [0, 25, 50, 75, 100], (v) => v + '%', xMax);
+      ctx.setLineDash([4, 4]); ctx.strokeStyle = theme['line-strong']; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(pad.l, m.y(50)); ctx.lineTo(W - pad.r, m.y(50)); ctx.stroke();
+      if (hist.length) {
+        ctx.strokeStyle = theme['ink-2']; ctx.lineWidth = 1.4; ctx.beginPath();
+        hist.forEach((h, i) => { const x = m.x(h.gen), y = m.y(h.current * 100); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }); ctx.stroke();
+        ctx.setLineDash([]); ctx.strokeStyle = theme.accent; ctx.lineWidth = 2.2; ctx.beginPath();
+        hist.forEach((h, i) => { const x = m.x(h.gen), y = m.y(h.best * 100); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }); ctx.stroke();
+      } else { ctx.setLineDash([]); ctx.fillStyle = theme['ink-3']; ctx.textAlign = 'center'; ctx.font = `13px ${theme.font}`; ctx.fillText('Results appear once the founders are scored.', W / 2, H / 2); }
+      ctx.setLineDash([]);
+    }
+    {
+      const cv = $('#chart-map'), W = cv.parentElement.clientWidth - 32, H = 230, ctx = fitCanvas(cv, W, H);
+      ctx.fillStyle = theme.surface; ctx.fillRect(0, 0, W, H);
+      const B = 5, padL = 64, padB = 34, gw = Math.min(W - padL - 8, H - padB - 8), cs = gw / B, ox = padL, oy = 4;
+      const cells = tr ? [...tr.archive.cells.values()] : [], pool = new Set(tr ? tr.archive.pool : []);
+      const qs = cells.map((c) => c.quality), qlo = Math.min(0.4, ...qs), qhi = Math.max(0.6, ...qs);
+      for (let i = 0; i < B; i++) for (let j = 0; j < B; j++) { ctx.fillStyle = theme['surface-2']; ctx.fillRect(ox + i * cs + 1, oy + (B - 1 - j) * cs + 1, cs - 2, cs - 2); }
+      for (const c of cells) {
+        const [i, j] = c.cell, t = (c.quality - qlo) / Math.max(1e-6, qhi - qlo);
+        ctx.fillStyle = alpha(theme.accent, 0.15 + 0.85 * Math.max(0, Math.min(1, t)));
+        const x = ox + i * cs + 1, y = oy + (B - 1 - j) * cs + 1;
+        ctx.fillRect(x, y, cs - 2, cs - 2);
+        if (pool.has(c)) { ctx.strokeStyle = theme.ink; ctx.lineWidth = 2; ctx.strokeRect(x + 1, y + 1, cs - 4, cs - 4); }
+        ctx.fillStyle = t > 0.6 ? theme.bg : theme.ink; ctx.font = `600 ${Math.max(10, Math.round(cs * 0.24))}px ${theme.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(Math.round(c.quality * 100) + '', x + (cs - 2) / 2, y + (cs - 2) / 2);
+      }
+      ctx.fillStyle = theme['ink-3']; ctx.font = `11px ${theme.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.fillText('More forcing threats \u2192', ox + gw / 2, oy + gw + 22);
+      ctx.save(); ctx.translate(16, oy + gw / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('More diagonal lines \u2192', 0, 0); ctx.restore();
+    }
+    {
+      const w = tr ? tr.wins : { precision: 0, current: 0, pool: 0, archive: 0, crossover: 0 };
+      const rows = [['Precision probe pairs', w.precision], ['Mutant of the current brain', w.current], ['Mutant of a pool champion', w.pool], ['Mutant of an archive cell', w.archive], ['Of those, crossed with a champion', w.crossover]];
+      const mx = Math.max(1, ...rows.map((r) => r[1]));
+      const html = rows.map(([l, v]) => `<li><span>${l}</span><span class="track"><span class="fill" style="display:block;width:${Math.max(2, Math.round((v / mx) * 100))}%;background:${theme.accent}"></span></span><span class="v">${fmt(v)}</span></li>`).join('');
+      const list = $('#sources'); if (list._html !== html) { list.innerHTML = html; list._html = html; }
+      const st = tr ? tr.acba.stats : null;
+      $('#acba-line').textContent = st && st.pairs ? `${fmt(st.pairs)} probe pairs scored so far: the plus side won ${fmt(st.plus)}, the minus side ${fmt(st.minus)}, ${fmt(st.ties)} ties. Each result nudges the parent\u2019s hidden shadows.` : 'Probe pairs start once the founders are scored.';
+    }
+    {
+      const cv = $('#chart-brain'), W = cv.parentElement.clientWidth - 32, H = 300, ctx = fitCanvas(cv, W, H);
+      ctx.fillStyle = theme.surface; ctx.fillRect(0, 0, W, H);
+      const best = tr && tr.archive.best() ? tr.archive.best().brain : TPRESET[state.trainK] ? T8.decode(TPRESET[state.trainK].brain) : null;
+      if (best) {
+        const S = T8.S, N = best.N, sx = Math.min(150, W * 0.36), sy = (j) => 12 + (j * (H - 24)) / (S - 1);
+        const cxU = sx + (W - sx - 60) / 2, cyU = H / 2, rad = Math.min((W - sx - 70) / 2, H / 2 - 18);
+        const up = (i) => [cxU + rad * Math.cos((2 * Math.PI * i) / N - Math.PI / 2), cyU + rad * Math.sin((2 * Math.PI * i) / N - Math.PI / 2)];
+        const outP = [W - 18, H / 2];
+        ctx.lineWidth = 1.1;
+        for (let i = 0; i < N; i++) for (let kk = 0; kk < 3; kk++) {
+          const x = 3 * i + kk, wv = best.w[x]; if (!wv) continue;
+          const src = best.src[x], [tx, ty] = up(i);
+          ctx.strokeStyle = alpha(wv > 0 ? theme.p1 : theme.p2, 0.55); ctx.beginPath();
+          if (src < S) { ctx.moveTo(sx, sy(src)); ctx.lineTo(tx, ty); }
+          else if (src - S === i) { ctx.arc(tx + 9 * Math.cos((2 * Math.PI * i) / N - Math.PI / 2), ty + 9 * Math.sin((2 * Math.PI * i) / N - Math.PI / 2), 6, 0, 6.2832); }
+          else { const [fx, fy] = up(src - S); ctx.moveTo(fx, fy); ctx.quadraticCurveTo(cxU, cyU, tx, ty); }
+          ctx.stroke();
+        }
+        for (let i = 0; i < N; i++) if (best.dec[i]) { const [ux, uy] = up(i); ctx.strokeStyle = alpha(best.dec[i] > 0 ? theme.p1 : theme.p2, 0.9); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(ux, uy); ctx.lineTo(outP[0], outP[1]); ctx.stroke(); }
+        ctx.font = `10.5px ${theme.font}`; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        for (let j = 0; j < S; j++) { ctx.fillStyle = theme['ink-2']; ctx.fillText(T8.SENSORS[j].label, sx - 6, sy(j)); ctx.fillStyle = theme['ink-3']; ctx.beginPath(); ctx.arc(sx, sy(j), 2.5, 0, 6.2832); ctx.fill(); }
+        for (let i = 0; i < N; i++) { const [ux, uy] = up(i); ctx.fillStyle = best.dec[i] ? theme.ink : theme['ink-3']; ctx.beginPath(); ctx.arc(ux, uy, best.dec[i] ? 6 : 4.5, 0, 6.2832); ctx.fill(); }
+        ctx.fillStyle = theme.accent; ctx.beginPath(); ctx.arc(outP[0], outP[1], 8, 0, 6.2832); ctx.fill();
+        $('#brain-cap').textContent = `Sensors on the left, the ${N} units in a ring, the vote on the right. Orange links are +1, blue are \u22121; ${Math.round(T8.liveFraction(best) * 100)}% of the ${3 * N} slots are live, and the ${best.V} filled units vote.`;
+      } else { ctx.fillStyle = theme['ink-3']; ctx.textAlign = 'center'; ctx.font = `13px ${theme.font}`; ctx.fillText('The best champion\u2019s wiring appears here.', W / 2, H / 2); }
+    }
+  }
+  const store = typeof window !== 'undefined' && window.storage ? window.storage : null;
+  const KEY = (k) => 'connect8-4d:ternary:' + k;
+  async function saveChampion(k) { if (!store) return; try { await store.set(KEY(k), JSON.stringify(state.champions[k]), false); } catch (e) { /* optional */ } }
+  async function loadChampions() {
+    if (!store) return;
+    for (const k of [5, 6, 7, 8]) {
+      try { const r = await store.get(KEY(k), false); if (r && r.value) { const c = JSON.parse(r.value); if (c && c.brain && Array.isArray(c.brain.w)) state.champions[k] = c; } } catch (e) { /* none saved */ }
+    }
+    updateChampionUI();
+  }
+  function copyText(text, sel, ok) {
+    const fallback = () => {
+      const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select(); let done = false; try { done = document.execCommand('copy'); } catch (e) { done = false; } ta.remove();
+      setStatus(sel, done ? ok : 'Copying is blocked here. Select the text and copy it by hand.', done ? 'good' : 'bad');
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => setStatus(sel, ok, 'good'), fallback); else fallback();
+  }
+
+  // ------------------------------------------------------------ wiring
+  const TABS = ['play', 'evolve', 'rules'];
+  function setTab(id, focus) {
+    state.tab = id;
+    for (const t of TABS) { const tab = $('#tab-' + t), on = t === id; tab.setAttribute('aria-selected', on ? 'true' : 'false'); tab.tabIndex = on ? 0 : -1; $('#panel-' + t).hidden = !on; if (on && focus) tab.focus(); }
+    markDirty();
+  }
+  function wire() {
+    TABS.forEach((t, n) => {
+      const tab = $('#tab-' + t);
+      tab.addEventListener('click', () => setTab(t));
+      tab.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); setTab(TABS[(n + (e.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length], true); } });
+    });
+    const tumble = $('#tumble'); tumble.checked = state.tumble; tumble.addEventListener('change', () => { state.tumble = tumble.checked; });
+    for (const p of ['xw', 'yw', 'zw']) { const el = $('#rot-' + p); el.value = state.rot[p]; el.addEventListener('input', () => { state.rot[p] = +el.value; dirty.tess = true; }); }
+    $('#zoom-in').addEventListener('click', () => { state.zoom = Math.min(3, state.zoom * 1.2); dirty.tess = true; });
+    $('#zoom-out').addEventListener('click', () => { state.zoom = Math.max(0.4, state.zoom / 1.2); dirty.tess = true; });
+    $$('input[name="layout"]').forEach((el) => el.addEventListener('change', () => {
+      state.layout = el.value; $('#slice-pick').hidden = state.layout !== 'one';
+      const c = state.cursor >= 0 ? state.cursor : state.lastMove;
+      if (state.layout === 'one' && c >= 0 && state.b) { state.focusZ = co(c, 2); state.focusW = co(c, 3); syncSlicePicks(); }
+      dirty.boards = true;
+    }));
+    $('#pick-z').addEventListener('change', (e) => { state.focusZ = +e.target.value; dirty.boards = true; });
+    $('#pick-w').addEventListener('change', (e) => { state.focusW = +e.target.value; dirty.boards = true; });
+    $('#show-danger').addEventListener('change', (e) => { state.showDanger = e.target.checked; dirty.tess = dirty.boards = true; });
+    $$('input[name="mode"]').forEach((el) => el.addEventListener('change', () => {
+      state.mode = el.value;
+      $('#brain2-pick').hidden = state.mode !== 'bots';
+      $('#brain-pick').hidden = state.mode === 'hotseat';
+      $('#brain-legend').textContent = state.mode === 'bots' ? 'Orange bot' : 'Opponent';
+      $('#setup-note').textContent = 'Press New game to apply.';
+    }));
+    $$('input[name="brain"]').forEach((el) => el.addEventListener('change', () => { state.brain = el.value; $('#setup-note').textContent = 'Press New game to apply.'; }));
+    $$('input[name="brain2"]').forEach((el) => el.addEventListener('change', () => { state.brain2 = el.value; $('#setup-note').textContent = 'Press New game to apply.'; }));
+    $$('input[name="k"]').forEach((el) => el.addEventListener('change', () => { state.k = +el.value; updateChampionUI(); $('#setup-note').textContent = 'Press New game to apply.'; }));
+    $('#btn-new').addEventListener('click', () => { $('#setup-note').textContent = 'Changes apply when you start a new game.'; newGame(); });
+    $('#btn-undo').addEventListener('click', undo);
+    $('#btn-hint').addEventListener('click', hint);
+    $('#btn-pause').addEventListener('click', () => { state.paused = !state.paused; $('#btn-pause').textContent = state.paused ? 'Resume' : 'Pause'; if (!state.paused) scheduleBot(); });
+    $('#speed').addEventListener('input', (e) => { state.speed = +e.target.value; });
+    $('#evo-run').addEventListener('click', () => {
+      if (state.evolving) { state.evolving = false; setStatus('#evo-status', 'Paused. Your champion is kept.'); dirty.evolve = true; return; }
+      if (!state.trainer || state.trainer.b.k !== state.trainK) newTrainer(!!TPRESET[state.trainK] && false);
+      else { state.evolving = true; setStatus('#evo-status', 'Evolving\u2026'); }
+      dirty.evolve = true;
+    });
+    $('#evo-reset').addEventListener('click', () => newTrainer(false));
+    $('#evo-seed').addEventListener('click', () => newTrainer(true));
+    $$('input[name="trainK"]').forEach((el) => el.addEventListener('change', () => { state.trainK = +el.value; state.evolving = false; state.trainer = null; updateChampionUI(); setStatus('#evo-status', `Training will use ${el.value} in a row. Press Start evolving.`); dirty.evolve = true; }));
+    $$('input[name="trainN"]').forEach((el) => el.addEventListener('change', () => { state.trainN = +el.value; state.evolving = false; state.trainer = null; setStatus('#evo-status', `Brains will have ${el.value} units. Press Start evolving.`); dirty.evolve = true; }));
+    $$('input[name="k"]').forEach((el) => el.addEventListener('change', () => { if (state.brain === 'ternary' && !TPRESET[+el.value]) { state.brain = 'evolved'; $('input[name="brain"][value="evolved"]').checked = true; } }));
+    $('#evo-use').addEventListener('click', () => {
+      const k = state.trainK;
+      state.k = k; $(`input[name="k"][value="${k}"]`).checked = true; updateChampionUI();
+      state.brain = 'mine'; $('input[name="brain"][value="mine"]').disabled = false; $('input[name="brain"][value="mine"]').checked = true;
+      if (state.mode === 'bots' || state.mode === 'hotseat') { state.mode = 'human-first'; $('input[name="mode"][value="human-first"]').checked = true; $('#brain2-pick').hidden = true; $('#brain-pick').hidden = false; $('#brain-legend').textContent = 'Opponent'; }
+      setTab('play'); newGame();
+    });
+    $('#evo-copy').addEventListener('click', () => { const c = championFor(state.trainK); if (c) copyText(JSON.stringify({ inARow: c.k, generation: c.gen, validation: c.record, brain: c.brain }), '#evo-status', 'Champion copied as JSON.'); });
+    window.addEventListener('resize', markDirty);
+    if (window.ResizeObserver) new ResizeObserver(markDirty).observe(document.body);
+  }
+
+  // ------------------------------------------------------------ loop
+  let last = now();
+  function tick() {
+    const t = now(), dt = Math.min(60, t - last);
+    last = t;
+    const g = state.game;
+    if (g && state.botDue && !state.paused && !state.over && t >= state.botDue && !state.building) { state.botDue = 0; botMove(); }
+    state.frameNo++;
+    if (state.evolving && state.trainer && (state.tab === 'evolve' || state.frameNo % 4 === 0)) stepTrainer(state.tab === 'evolve' ? 12 : 1);
+    if (state.tab === 'play' && g) {
+      updateViewTarget(dt);
+      if (state.tumble) {
+        state.rot.xw += dt * 0.0002; state.rot.yw += dt * 0.00014; state.rot.zw += dt * 0.00026;
+        for (const p of ['xw', 'yw', 'zw']) if (state.rot[p] > Math.PI) state.rot[p] -= 2 * Math.PI;
+        if (Math.floor(t / 150) !== Math.floor((t - dt) / 150)) for (const p of ['xw', 'yw', 'zw']) $('#rot-' + p).value = state.rot[p];
+      }
+      drawTess();
+      if (dirty.boards) drawSlices();
+      if (dirty.read) updateReadouts();
+    } else if (state.tab === 'evolve' && dirty.evolve) renderEvolve();
+  }
+  function frame() { try { tick(); } catch (err) { console.error(err); } requestAnimationFrame(frame); }
+
+  function boot() {
+    readTheme();
+    tess.canvas = $('#tess'); sl.canvas = $('#boards');
+    wire(); initTessInput(); initSliceInput();
+    loadChampions();
+    newGame();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(markDirty);
+    requestAnimationFrame(frame);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Star Mutual — A two-way cryptographic handshake laboratory</title>
+<style>
+:root{color-scheme:dark;--bg:#09111c;--panel:#111e30;--panel2:#142438;--edge:#30415b;--ink:#eef5ff;--soft:#aebed3;--a:#ff79ba;--b:#4de0cb;--muted:#6f839f;--warn:#ffcc7d;--bad:#ff858a;--good:#74e3a9}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(ellipse 1100px 680px at 50% -210px,#203c5d 0%,transparent 75%),var(--bg);color:var(--ink);margin:0;line-height:1.5}
+.container{max-width:1200px;margin:auto;padding:0 26px}header{padding:35px 0 24px}.eyebrow{font-size:.8rem;letter-spacing:.2em;color:var(--b);font-weight:750;text-transform:uppercase}.headline{font-size:clamp(2.3rem,5.5vw,4.2rem);font-weight:840;line-height:1.05;letter-spacing:-.05em;margin:12px 0}h1,h2,h3,p{margin-top:0}h2{font-size:1.35rem;letter-spacing:-.02em}h3{font-size:1.03rem}p{color:var(--soft)}.subtitle{max-width:800px;font-size:1.11rem}.pill{display:inline-flex;border:1px solid var(--edge);padding:4px 10px;border-radius:30px;font-size:.73rem;letter-spacing:.08em;text-transform:uppercase;font-weight:750;margin-right:7px;color:var(--soft)}.pill.orange{border-color:#795e38;color:var(--warn)}.topgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0}.panel{background:linear-gradient(155deg,#132237,#0e192a);border:1px solid var(--edge);border-radius:16px;padding:23px;box-shadow:0 12px 25px #00000020}.config{display:grid;grid-template-columns:1fr 1fr auto;gap:15px;align-items:end}.fld label{display:block;font-size:.78rem;font-weight:720;letter-spacing:.04em;text-transform:uppercase;color:var(--soft);margin:0 0 8px}select,textarea{border-radius:9px;border:1px solid #455b76;background:#0b1626;color:var(--ink);font:inherit;width:100%;padding:11px 13px;outline:0}select:focus,textarea:focus{border-color:var(--b)}textarea{resize:vertical;min-height:76px}button{border:1px solid #506482;border-radius:9px;color:var(--ink);background:#20354f;padding:11px 16px;font-weight:750;font:inherit;cursor:pointer;transition:background .13s,transform .13s}button:hover:not(:disabled){background:#314967}button:active:not(:disabled){transform:translateY(1px)}button:disabled{opacity:.45;cursor:default}button.primary{background:#3dbaad;color:#061a22;border-color:#52e6d2;font-weight:800}button.primary:hover:not(:disabled){background:#62e3d2}button.pink{background:#4d2c47;border-color:#916078;color:#ffddec}button.warn{background:#3b2a34;border-color:#785568;color:#ffd1d7}.btnrow{display:flex;flex-wrap:wrap;gap:11px}.meta{font-size:.85rem;color:var(--muted);margin:12px 0 0}.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}.parties{display:grid;grid-template-columns:minmax(0,1fr) 250px minmax(0,1fr);align-items:center;gap:12px;margin:17px 0}.identity{border-radius:16px;border:1px solid var(--edge);padding:20px;background:#111d2f;min-width:0}.identity.alice{border-top:3px solid var(--a)}.identity.bob{border-top:3px solid var(--b)}.ident-title{display:flex;align-items:center;justify-content:space-between;gap:6px}.ident-title h2{font-size:1.65rem;margin:0}.id-dot{height:10px;width:10px;border-radius:50%;display:inline-block;background:var(--a)}.bob .id-dot{background:var(--b)}.fig{display:grid;place-items:center;height:180px;position:relative}.fig:before{content:'';position:absolute;width:170px;height:170px;border-radius:50%;background:radial-gradient(circle,#26557c44,transparent 74%)}.fig svg{position:relative;width:185px;height:185px}.figcap{text-align:center;font-size:.75rem;color:var(--muted)}.finger{display:block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.76rem;overflow-wrap:anywhere;color:#dbe9fb;background:#0a1423;border-radius:8px;padding:9px;margin-top:10px}.identity p{font-size:.87rem;margin:9px 0 0}.linkstage{display:grid;gap:10px;justify-items:center;text-align:center}.arrow{font-size:2rem;color:var(--b);letter-spacing:.25em;font-weight:700}.tag{font-size:.72rem;color:var(--soft);text-transform:uppercase;letter-spacing:.12em;font-weight:750}.bigstat{font-size:2rem;letter-spacing:-.04em;font-weight:820;margin:2px 0}.statistics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0 24px}.stat{border:1px solid var(--edge);border-radius:12px;padding:13px;background:#132135}.stat span{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--soft)}.stat strong{display:block;font-size:1.45rem;letter-spacing:-.03em;font-variant-numeric:tabular-nums}.section-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px}.progress{height:9px;overflow:hidden;border-radius:50px;background:#26344a;margin:15px 0 5px}.progress div{background:linear-gradient(90deg,var(--a),var(--b));width:0%;height:100%;transition:width .1s}.progress-label{font-size:.82rem;min-height:25px;color:var(--soft)}.status-line{border:1px solid #3a5972;background:#122840;border-radius:9px;padding:12px 15px;margin:18px 0 0;color:#c5e8fd;min-height:48px}.status-line.ok{border-color:#317658;color:var(--good)}.status-line.error{border-color:#934c56;color:var(--bad)}.log{margin:0;padding:0;list-style:none;max-height:340px;overflow:auto;display:grid;gap:10px}.log li{border:1px solid #30415b;border-radius:10px;padding:13px 15px;background:#0d1a2b}.log .headline-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;font-weight:700}.log .small{font-size:.78rem;color:var(--soft);margin-top:5px}.log .auth{color:var(--good)}.log .attack{color:var(--warn)}.log .arrowtxt{color:var(--b)}.mono{font-family:ui-monospace,Menlo,monospace}.inspector{font-size:.86rem;color:var(--soft);background:#0b1728;padding:15px;border-radius:9px;white-space:pre-wrap;overflow-wrap:anywhere;min-height:130px}.notes{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:20px 0 75px}.notes ul{padding-left:20px;color:var(--soft);margin:0}.notes li{margin-bottom:8px}.notes strong{color:var(--ink)}.smallmuted{font-size:.8rem;color:var(--muted)}@media(max-width:850px){.parties{grid-template-columns:1fr;gap:12px}.linkstage{min-height:85px}.arrow{transform:rotate(90deg)}.config{grid-template-columns:1fr 1fr}.config button{grid-column:1/-1}.statistics{grid-template-columns:1fr 1fr}.notes,.two,.topgrid{grid-template-columns:1fr}}@media(max-width:520px){.container{padding:0 16px}.config{grid-template-columns:1fr}.statistics{grid-template-columns:1fr 1fr}.panel{padding:17px}button{width:100%}.btnrow{display:grid;grid-template-columns:1fr 1fr}.btnrow button:first-child{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<div class="container">
+<header><div class="eyebrow">Claude Decode · rebuilt cryptography laboratory</div><h1 class="headline">THE STAR<br>MUTUAL HANDSHAKE</h1><p class="subtitle">Two strangers, two secret colorings, and an endless conversation. Each exchange tests <strong>both identities</strong> using fresh unpredictable challenges. Every successful exchange is chained to the one before.</p><span class="pill">Offline / self-contained</span><span class="pill">32–1,000 squares</span><span class="pill orange">Experimental — not secure communications</span></header>
+<section class="panel"><div class="section-header"><div><h2 style="margin-bottom:5px">01 · Construct two identities</h2><p style="margin:0;font-size:.85rem">The public values are large integers; the hidden balanced colorings remain private.</p></div></div><div class="config"><div class="fld"><label for="size">Squares per star</label><select id="size"><option value="32">32 · attackable</option><option value="48">48 · attackable</option><option value="128">128</option><option value="256">256</option><option value="512">512</option><option value="1000" selected>1,000 · experiment</option></select></div><div class="fld"><label for="rounds">Challenges per direction</label><select id="rounds"><option value="16">16 · fast smoke test</option><option value="32">32 · quick</option><option value="64">64 · moderate</option><option value="128" selected>128 · detailed</option><option value="256">256 · very slow</option></select></div><button type="button" id="reset" class="pink">Generate new keys + session</button></div><p id="configMeta" class="meta"></p></section>
+<section class="parties"><div class="identity alice"><div class="ident-title"><h2><span class="id-dot"></span> Alice</h2><span class="pill">Identity A</span></div><p>Owns one private coloring. Knows Bob’s pinned public key.</p><span class="finger" id="fpA">Generating…</span></div><div class="linkstage"><div class="fig" id="starDrawing"></div><div class="arrow">⇄</div><div class="tag">Mutual identity proofs<br>fresh nonces · live challenge</div><div class="figcap" id="starCaption">Schematic of the 1,000-square star</div></div><div class="identity bob"><div class="ident-title"><h2><span class="id-dot"></span> Bob</h2><span class="pill">Identity B</span></div><p>Owns a different private coloring. Knows Alice’s pinned public key.</p><span class="finger" id="fpB">Generating…</span></div></section>
+<section class="statistics"><div class="stat"><span>Completed exchanges</span><strong id="completed">0</strong></div><div class="stat"><span>Accepted identity proofs</span><strong id="accepted">0</strong></div><div class="stat"><span>Rejected attack tests</span><strong id="rejected">0</strong></div><div class="stat"><span>Idealized challenge bound</span><strong id="bound">~2⁻⁷⁵</strong></div></section>
+<section class="panel"><div class="section-header"><div><h2 style="margin-bottom:4px">02 · Exchange messages, in both directions</h2><p style="margin:0;font-size:.85rem">Responder proves their identity; initiator proves theirs in return. The next exchange reverses roles.</p></div><span class="pill" id="currentSide">Alice → Bob</span></div><div class="fld"><label for="message">Message for the next authenticated exchange</label><textarea id="message">A small star can hold a surprisingly complicated secret.</textarea></div><div class="btnrow" style="margin-top:13px"><button class="primary" id="one">Authenticate both ways · once</button><button id="five">Run 5 exchanges</button><button id="auto">Run continuously</button><button id="stop" disabled>Stop after current exchange</button></div><div class="progress"><div id="progressFill"></div></div><div id="progressLabel" class="progress-label">Ready. Both directions will be checked on every exchange.</div><div id="status" class="status-line">Generate keys, then begin the conversation.</div></section>
+<div class="two" style="margin:16px 0"><section class="panel"><h2>03 · Test an attacker</h2><p style="font-size:.9rem">These tests use the actual verifier, rather than merely displaying a failure icon.</p><div class="btnrow"><button id="impostor" class="warn">Impersonate without key</button><button id="replay" class="warn">Replay last exchange</button><button id="tamper" class="warn">Tamper with proof context</button></div><p class="smallmuted">Impersonation tests an invented coloring. Replay tests the sequence and nonce gate. Tampering checks that commitments are bound to the exact exchange.</p><div class="inspector mono" id="inspector">No attack tests run yet.</div></section><section class="panel"><h2>04 · Conversation history</h2><p style="font-size:.88rem">The transcript hash advances only after both peers prove their identities.</p><ul class="log" id="log"><li><div class="small">No authenticated exchanges yet.</div></li></ul></section></div>
+<div class="notes"><section class="panel"><h2>What the program actually proves</h2><ul><li><strong>Interactive authentication:</strong> independent verifier challenges are chosen <em>after</em> each commitment.</li><li><strong>Mutual:</strong> Alice verifies Bob and Bob verifies Alice, every time.</li><li><strong>Freshness:</strong> two new 128-bit nonces, an exact step number and previous transcript digest are bound into the commitments.</li><li><strong>Repetition:</strong> the initiator alternates and every new exchange is chained to its predecessor.</li><li><strong>Assumption:</strong> each party already knows the other’s authentic public-key fingerprint.</li></ul></section><section class="panel"><h2>What it does <em>not</em> prove</h2><ul><li><strong>Not encryption:</strong> exchanged messages are public; no shared secret is produced.</li><li><strong>Not a transferable signature:</strong> this version deliberately uses a <em>live</em> zero-knowledge-style identification protocol.</li><li><strong>Not proven secure:</strong> a 1,000-square secret has no audited classical or quantum security estimate.</li><li><strong>Not quantum-certified:</strong> increasing puzzle size and round count cannot establish resistance to quantum algorithms.</li><li><strong>Not Internet-ready:</strong> both identities are simulated locally; no network transport or public-key distribution.</li></ul></section></div>
+</div>
+<script>
+'use strict';
+/* Star-key mutual authentication toy. Do not use for real security. */
+const CORE_VERSION = 'STAR-MUTUAL/2';
+const ENC = new TextEncoder();
+function bytesHex(bytes) { let out=''; for (let i=0;i<bytes.length;i++) out+=bytes[i].toString(16).padStart(2,'0'); return out; }
+function secureFill(bytes) { for (let i=0;i<bytes.length;i+=65536) crypto.getRandomValues(bytes.subarray(i,Math.min(i+65536,bytes.length))); return bytes; }
+function randomBytes(n) { return secureFill(new Uint8Array(n)); }
+function randomHex(n=16) { return bytesHex(randomBytes(n)); }
+function randomInt(n) { // unbiased random in [0,n)
+  const a=new Uint32Array(1), limit=Math.floor(2**32/n)*n;
+  do {crypto.getRandomValues(a);} while(a[0]>=limit);
+  return a[0]%n;
+}
+function shuffleInPlace(a) { for(let i=a.length-1;i>0;i--){
+    const j=randomInt(i+1); [a[i],a[j]]=[a[j],a[i]];
+  } return a; }
+function randomVector(n,bits) {
+  const width=Math.ceil(bits/8), data=randomBytes(n*width), mask=(1n<<BigInt(bits))-1n, out=new Array(n);
+  for(let i=0;i<n;i++) {let h=''; const pos=i*width; for(let j=0;j<width;j++) h+=data[pos+j].toString(16).padStart(2,'0'); out[i]=BigInt('0x'+h)&mask; }
+  return out;
+}
+function randomBits(bits) { return randomVector(1,bits)[0]; }
+const DEG=Math.PI/180;
+function leg(g){return 1-Math.tan((45-g/2)*DEG);}
+function bitLen(x){return x===0n?0:(x<0n?-x:x).toString(2).length;}
+function maskBits(v,bits){return BigInt.asUintN(bits,v);}
+function dotMod(L,v,bits) {let s=0n;for(let i=0;i<L.length;i++) s+=L[i]*v[i];return maskBits(s,bits);}
+function buildPublic(N,L,b){let sum=0n;for(const v of L)sum+=v<0n?-v:v;let odd=-1;for(let i=0;i<N;i++)if((L[i]&1n)===1n){odd=i;break;}return{N,b,L,M:bitLen(sum)+2,odd};}
+function makeKeyPair(N){
+ if(!Number.isInteger(N)||N<32||N>1000||N%2)throw new Error('Choose an even number from 32 to 1000.');
+ const b=Math.max(64,N+8), shift=BigInt(b-48);
+ const noise=()=>randomBits(b-48);
+ const big=(x)=>(BigInt(Math.round(x*281474976710656))<<shift)+noise();
+ const floorGap=9/N, bits=randomBytes(N*8), dv=new DataView(bits.buffer), E=Array.from({length:N},(_,i)=>{const x=(dv.getUint32(i*8)*2097152+(dv.getUint32(i*8+4)>>>11)+0.5)/9007199254740992;return -Math.log(1-x);});
+ const sum=E.reduce((x,y)=>x+y,0), gaps=E.map(v=>floorGap+(90-N*floorGap)*v/sum);
+ const ell=gaps.map(v=>big(Math.log(leg(v)))), c0=big(Math.log(1/8));
+ const pink=shuffleInPlace(Array.from({length:N},(_,i)=>i)).slice(0,N/2);
+ const flags=new Uint8Array(N); for(const p of pink) flags[p]=1;
+ const A=shuffleInPlace(pink.slice()), B=shuffleInPlace(Array.from({length:N},(_,i)=>i).filter(x=>!flags[x]));
+ const evenA=randomInt(2)===0, posOf=new Array(N);
+ for(let p=0;p<N;p++)posOf[((p%2===0)===evenA?A:B)[p>>1]]=p;
+ const Lpos=new Array(N); for(let p=0;p<N;p++)Lpos[p]=c0+ell[(p+N-1)%N]+ell[p];
+ const L=posOf.map(p=>Lpos[p]);
+ const secret=Array.from(flags,v=>v?1n:-1n);
+ if(dotMod(L,secret,buildPublic(N,L,b).M)!==0n)throw new Error('Generated key failed balance check.');
+ return {pub:buildPublic(N,L,b),secret,star:{N,gaps,offset:randomInt(360)}};
+}
+function publicText(pub){return 'STAR-DEMO-KEY/2 squares='+pub.N+' bits='+pub.b+'\n'+pub.L.map(x=>x.toString()).join(' ');}
+function sha256Hex(bytes){
+ // Pure JS SHA-256 fallback for a local file, with no external libraries or network.
+ const K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+ const H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+ const l=bytes.length, padded=Math.ceil((l+9)/64)*64, v=new Uint8Array(padded);v.set(bytes);v[l]=128;
+ const dv=new DataView(v.buffer);dv.setUint32(padded-8,Math.floor(l/536870912));dv.setUint32(padded-4,(l*8)>>>0);
+ const W=new Uint32Array(64);const ROT=(x,n)=>(x>>>n)|(x<<(32-n));
+ for(let off=0;off<padded;off+=64){
+   for(let i=0;i<16;i++)W[i]=dv.getUint32(off+4*i);
+   for(let i=16;i<64;i++)W[i]=(W[i-16]+(ROT(W[i-15],7)^ROT(W[i-15],18)^(W[i-15]>>>3))+W[i-7]+(ROT(W[i-2],17)^ROT(W[i-2],19)^(W[i-2]>>>10)))>>>0;
+   let [a,b,c,d,e,f,g,h]=H;
+   for(let i=0;i<64;i++){
+     const t1=(h+(ROT(e,6)^ROT(e,11)^ROT(e,25))+((e&f)^((~e)&g))+K[i]+W[i])>>>0;
+     const t2=((ROT(a,2)^ROT(a,13)^ROT(a,22))+((a&b)^(a&c)^(b&c)))>>>0;
+     h=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=b;b=a;a=(t1+t2)>>>0;
+   }
+   for(let i=0;i<8;i++)H[i]=(H[i]+[a,b,c,d,e,f,g,h][i])>>>0;
+ }
+ return H.map(v=>v.toString(16).padStart(8,'0')).join('');
+}
+function hash(s){return sha256Hex(ENC.encode(s));}
+function fingerprint(pub){return hash('STAR-KEY-FP/2|'+publicText(pub));}
+function seal(context,nonce,text){return hash('STAR-COMMIT/2|'+context+'|'+nonce+'|'+text);}
+function vecString(v){return v.map(x=>x.toString(16)).join(',');}
+function inverseOdd(a,M){let x=a;for(let i=0;i<Math.ceil(Math.log2(M))+2;i++)x=maskBits(x*(2n-a*x),M);return x;}
+function makeProofRound(pub,secret,context,mode='honest'){
+ const {N,M}=pub;let s;
+ if(mode==='honest')s=secret;
+ else if(mode==='fakeColor'||pub.odd<0){s=shuffleInPlace(Array.from({length:N},(_,i)=>i<N/2?1n:-1n));}
+ else {
+   s=randomVector(N,M);s[pub.odd]=0n;
+   s[pub.odd]=maskBits(-dotMod(pub.L,s,M)*inverseOdd(pub.L[pub.odd],M),M);
+ }
+ const perm=shuffleInPlace(Array.from({length:N},(_,i)=>i));
+ const u=randomVector(N,M), w=u.map((v,i)=>maskBits(v+s[i],M));
+ const pu=perm.map(i=>u[i]),pw=perm.map(i=>w[i]);
+ const n1=randomHex(), n2=randomHex(), n3=randomHex();
+ const commits=[seal(context,n1,perm.join(',')+';'+dotMod(pub.L,u,M).toString(16)),seal(context,n2,vecString(pu)),seal(context,n3,vecString(pw))];
+ return {commits,respond(c){
+   if(c===1)return {pu,z:perm.map(i=>s[i]),n2,n3};
+   if(c===2)return {perm,w,n1,n3};
+   return {perm,u,n1,n2};
+ }};
+}
+function isPerm(p,N){if(!Array.isArray(p)||p.length!==N)return false;const seen=new Uint8Array(N);for(const i of p){if(!Number.isInteger(i)||i<0||i>=N||seen[i])return false;seen[i]=1;}return true;}
+function isVec(v,N,M){return Array.isArray(v)&&v.length===N&&v.every(x=>typeof x==='bigint'&&x>=0n&&BigInt.asUintN(M,x)===x);}
+function checkProofRound(pub,context,commits,c,r){
+ if(!Array.isArray(commits)||commits.length!==3||commits.some(v=>typeof v!=='string'||!/^[0-9a-f]{64}$/.test(v)))return false;
+ if(!r||![1,2,3].includes(c))return false;
+ const {N,M}=pub;
+ if(c===1){
+   if(!isVec(r.pu,N,M)||!Array.isArray(r.z)||r.z.length!==N)return false;
+   let plus=0;for(const x of r.z){if(x===1n)plus++;else if(x!==-1n)return false;}if(plus!==N/2)return false;
+   return seal(context,r.n2,vecString(r.pu))===commits[1] && seal(context,r.n3,vecString(r.pu.map((x,i)=>maskBits(x+r.z[i],M))))===commits[2];
+ }
+ if(!isPerm(r.perm,N))return false;
+ if(c===2){
+  if(!isVec(r.w,N,M))return false;
+  return seal(context,r.n1,r.perm.join(',')+';'+dotMod(pub.L,r.w,M).toString(16))===commits[0]&&seal(context,r.n3,vecString(r.perm.map(i=>r.w[i])))===commits[2];
+ }
+ if(!isVec(r.u,N,M))return false;
+ return seal(context,r.n1,r.perm.join(',')+';'+dotMod(pub.L,r.u,M).toString(16))===commits[0]&&seal(context,r.n2,vecString(r.perm.map(i=>r.u[i])))===commits[1];
+}
+function envelopeContext(env,side){return JSON.stringify({domain:'STAR-INTERACTIVE/2',session:env.session,step:env.step,previous:env.previous,initiator:env.initiator,responder:env.responder,nonceI:env.nonceI,nonceR:env.nonceR,text:env.text,from:side,pkAlice:env.pkAlice,pkBob:env.pkBob});}
+function validateEnvelope(env,session){
+ if(!env||!Number.isSafeInteger(env.step)||env.step!==session.nextStep)return 'Out-of-order / replayed step';
+ if(env.session!==session.id||env.previous!==session.head)return 'Session or transcript mismatch';
+ if(env.pkAlice!==session.fpA||env.pkBob!==session.fpB)return 'Public-key identity mismatch';
+ if(env.initiator!==(env.step%2===1?'Alice':'Bob')||env.responder!==(env.initiator==='Alice'?'Bob':'Alice'))return 'Unexpected initiator';
+ if(typeof env.text!=='string'||env.text.length>2000)return 'Invalid message';
+ if(!/^[0-9a-f]{32}$/.test(env.nonceI)||!/^[0-9a-f]{32}$/.test(env.nonceR)||env.nonceI===env.nonceR)return 'Invalid nonce';
+ if(session.used.has(env.nonceI)||session.used.has(env.nonceR))return 'Nonce replay';
+ return null;
+}
+function makeEnvelope(session,text){let i=randomHex(),r=randomHex();while(r===i)r=randomHex();return {session:session.id,step:session.nextStep,previous:session.head,initiator:session.nextStep%2===1?'Alice':'Bob',responder:session.nextStep%2===1?'Bob':'Alice',nonceI:i,nonceR:r,text,pkAlice:session.fpA,pkBob:session.fpB};}
+function createSession(A,B){const fpA=fingerprint(A.pub),fpB=fingerprint(B.pub),id=randomHex(16);return {id,fpA,fpB,nextStep:1,head:hash('STAR-SESSION/2|'+id+'|'+fpA+'|'+fpB),used:new Set(),history:[],lastSample:null};}
+async function liveProof(pub,secret,context,rounds,mode,onProgress){
+ if(!Number.isInteger(rounds)||rounds<1||rounds>512)throw new Error('Invalid round count');
+ let chain=hash('PROOF-BEGIN/2|'+context),sample=null;
+ for(let i=0;i<rounds;i++){
+  const pr=makeProofRound(pub,secret,context+'|round='+i,mode);
+  const c=randomInt(3)+1; // verifier chooses independently AFTER commitment
+  const response=pr.respond(c);
+  const ok=checkProofRound(pub,context+'|round='+i,pr.commits,c,response);
+  if(!sample)sample={context:context+'|round='+i,commits:pr.commits,challenge:c,response,pub};
+  if(!ok)return {ok:false,passed:i,rounds,chain,sample};
+  chain=hash(chain+'|'+i+'|'+pr.commits.join(',')+'|'+c);
+  if(onProgress && (i+1)%4===0){onProgress(i+1,rounds); await new Promise(resolve=>setTimeout(resolve,0));}
+ }
+ return{ok:true,passed:rounds,rounds,chain,sample};
+}
+async function exchange(session,A,B,message,rounds,progress){
+ const env=makeEnvelope(session,message),err=validateEnvelope(env,session);
+ if(err)return {ok:false,error:err};
+ const parties={Alice:A,Bob:B}; const direction=[env.responder,env.initiator];
+ const proofs=[];
+ for(let j=0;j<2;j++){
+  const who=direction[j],ctx=envelopeContext(env,who);
+  const proof=await liveProof(parties[who].pub,parties[who].secret,ctx,rounds,'honest',n=>{if(progress)progress(who,j,n,rounds);});
+  proofs.push(proof);
+  if(!proof.ok)return {ok:false,error:who+' identity proof rejected',env,proofs};
+ }
+ const record={...env,proofDigestA:proofs[direction.indexOf('Alice')].chain,proofDigestB:proofs[direction.indexOf('Bob')].chain};
+ session.head=hash('STAR-LINK/2|'+session.head+'|'+JSON.stringify(record));
+ session.used.add(env.nonceI);session.used.add(env.nonceR);
+ session.history.push({step:env.step,from:env.initiator,to:env.responder,text:message,head:session.head,rounds,nonces:[env.nonceI,env.nonceR]});
+ session.lastSample=proofs[0].sample;session.lastEnvelope=env;
+ session.nextStep++;
+ return {ok:true,record,proofs};
+}
+function securityEstimate(rounds){return -rounds*Math.log2(2/3);}
+</script>
+<script>
+(function(){
+'use strict';
+const $=x=>document.getElementById(x);
+let A=null,B=null,S=null,busy=false,stopRequested=false,accepted=0,rejected=0;
+function setStatus(message,kind=''){const el=$('status');el.textContent=message;el.className='status-line '+kind;}
+function shortHash(s){return s.slice(0,18)+'…'+s.slice(-10);}
+function locked(locked){busy=locked;for(const id of ['size','rounds','reset','one','five','auto','impostor','replay','tamper'])$(id).disabled=locked;$('stop').disabled=!locked;}
+function updateStats(){
+ $('completed').textContent=S?S.history.length:0;
+ $('accepted').textContent=accepted;
+ $('rejected').textContent=rejected;
+ $('bound').textContent='~2⁻'+securityEstimate(+$('rounds').value).toFixed(0);
+ $('currentSide').textContent=S?(S.nextStep%2===1?'Alice → Bob':'Bob → Alice'):'—';
+}
+function starArtwork(n){
+ const rings=[];const show=Math.min(120,n);
+ for(let j=0;j<show;j++){
+   const a=(j/show)*2*Math.PI,r1=(j%2?64:72),r2=79;
+   const x1=90+Math.cos(a)*r1,y1=90+Math.sin(a)*r1,x2=90+Math.cos(a)*r2,y2=90+Math.sin(a)*r2;
+   rings.push(`<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="${j%2?'#ff79ba':'#4de0cb'}" stroke-width="1.2" opacity=".8"/>`);
+ }
+ return `<svg viewBox="0 0 180 180" role="img" aria-label="Stylized ring indicating ${n} mathematical squares"><circle cx="90" cy="90" r="65" fill="none" stroke="#4b7795" stroke-width=".7" opacity=".55"/><circle cx="90" cy="90" r="53" fill="none" stroke="#3e6582" stroke-width=".7"/>${rings.join('')}<circle cx="90" cy="90" r="44" fill="#101e32" stroke="#47647f"/><text x="90" y="91" fill="#ebf5ff" text-anchor="middle" font-size="25" font-weight="800">${n.toLocaleString()}</text><text x="90" y="109" fill="#92a7c1" text-anchor="middle" font-size="10">SQUARES</text></svg>`;
+}
+function generate(){
+ try{
+   setStatus('Generating two independent star key pairs…');
+   const n=Number($('size').value);A=makeKeyPair(n);B=makeKeyPair(n);S=createSession(A,B);accepted=0;rejected=0;
+   $('fpA').textContent=shortHash(S.fpA);$('fpB').textContent=shortHash(S.fpB);
+   $('starDrawing').innerHTML=starArtwork(n);
+   $('starCaption').textContent=n>120?`Schematic: ${n} mathematical squares, ${Math.min(120,n)} drawn ticks`:`Schematic with ${n} tick marks`;
+   const pkSize=(publicText(A.pub).length/1024).toFixed(1);
+   $('configMeta').textContent=`Each public key: ${pkSize} KiB of decimal integers · ${A.pub.M}-bit proof modulus · ${$('rounds').value} independent challenges per direction. No claimed cryptographic security level.`;
+   $('progressFill').style.width='0%';$('progressLabel').textContent='Fresh session established. No exchanges accepted yet.';
+   $('inspector').textContent='No attack tests run yet.';$('log').replaceChildren();
+   setStatus('Two fresh independent key pairs are ready. Alice and Bob each know the other’s public-key fingerprint.','ok');updateStats();
+ }catch(e){setStatus('Key generation error: '+e.message,'error');console.error(e);}
+}
+function addLog(tag,line,small,cls='auth'){
+ const li=document.createElement('li');const hd=document.createElement('div');hd.className='headline-row';
+ const l=document.createElement('span');l.textContent=tag+' · '+line;l.className=cls;
+ const smallEl=document.createElement('div');smallEl.className='small mono';smallEl.textContent=small;
+ hd.append(l);li.append(hd,smallEl);$('log').prepend(li);
+ while($('log').children.length>32)$('log').lastChild.remove();
+}
+function progress(who,j,n,total){const percentage=100*(j*total+n)/(2*total);$('progressFill').style.width=percentage.toFixed(1)+'%';$('progressLabel').textContent=`${who} proves possession of private coloring — challenge ${n}/${total} · direction ${j+1} of 2`;}
+async function run(count){
+ if(busy||!S)return;locked(true);stopRequested=false;
+ try{
+ for(let i=0;i<count&&!stopRequested;i++){
+   const sender=S.nextStep%2===1?'Alice':'Bob',recipient=sender==='Alice'?'Bob':'Alice';
+   const text=$('message').value.trim()||`Hello from ${sender}`;
+   setStatus(`Exchange ${S.nextStep}: ${sender} → ${recipient}. First the recipient proves identity; then the sender proves identity.`);
+   $('progressFill').style.width='0%';
+   const result=await exchange(S,A,B,text,Number($('rounds').value),progress);
+   if(!result.ok){setStatus('Handshake rejected: '+result.error,'error');addLog('FAILED',result.error,'Transcript was not advanced','attack');break;}
+   accepted+=2;
+   addLog('ACCEPTED',`${sender} → ${recipient} · exchange ${result.record.step}`,`Both proofs passed · head ${shortHash(S.head)} · fresh 128-bit nonces`);
+   setStatus(`Exchange #${result.record.step} accepted: both identities verified. Transcript chain advanced.`, 'ok');
+   $('progressFill').style.width='100%';updateStats();
+ }
+ }catch(e){setStatus('Handshake error: '+e.message,'error');console.error(e);}
+ finally{locked(false);updateStats();}
+}
+async function attackImpostor(){if(busy||!S)return;locked(true);
+ try{
+ const env=makeEnvelope(S,'An impostor claims to be the next responder');const who=env.responder,ctx=envelopeContext(env,who),pub=(who==='Alice'?A:B).pub;
+ setStatus('Attempting identity proof using a fabricated balanced coloring…');
+ const res=await liveProof(pub,null,ctx,Number($('rounds').value),'fakeColor',(n,total)=>{$('progressFill').style.width=(n/total*100)+'%';$('progressLabel').textContent=`Impostor has passed ${n}/${total} challenges…`;});
+ const msg=res.ok?'Unexpected acceptance. DO NOT TRUST THIS DEMO.':`Forgery rejected at challenge ${res.passed+1}/${res.rounds}.`;
+ $('inspector').textContent=`ATTACK: IMPERSONATION\nVictim identity: ${who}\nStrategy: incorrect balanced ±1 coloring\nVerified rounds: ${res.passed}\nOutcome: ${res.ok?'FORGERY ACCEPTED':'REJECTED'}\nImportant: random rejection does not prove resistance to advanced attacks.`;
+ if(!res.ok){rejected++;setStatus(msg,'ok');}else setStatus(msg,'error');
+ addLog(res.ok?'WARNING':'REJECTED','Impostor without secret',`Passed ${res.passed}/${res.rounds} rounds · session unchanged`,'attack');
+ }catch(e){setStatus('Attack test error: '+e.message,'error');console.error(e);}finally{locked(false);updateStats();}
+}
+function attackReplay(){if(busy||!S)return;if(!S.lastEnvelope){setStatus('Run an exchange first so there is something to replay.');return;}
+ const cause=validateEnvelope(S.lastEnvelope,S),ok=!!cause;
+ $('inspector').textContent=`ATTACK: REPLAY\nReplayed exchange: ${S.lastEnvelope.step}\nExpected exchange: ${S.nextStep}\nGate: ${cause||'ACCEPTED — FAILURE'}\nOutcome: ${ok?'REJECTED':'UNEXPECTED ACCEPTANCE'}`;
+ if(ok){rejected++;setStatus('Replay rejected: '+cause+'. Transcript unchanged.','ok');}else setStatus('Replay was accepted — authentication logic broken.','error');
+ addLog(ok?'REJECTED':'WARNING','Old exchange replay',cause||'Unexpectedly accepted','attack');updateStats();
+}
+function attackTamper(){if(busy||!S)return;const sample=S.lastSample;if(!sample){setStatus('Run an exchange first so there is a verified proof to tamper with.');return;}
+ const ok=checkProofRound(sample.pub,sample.context+'|message altered',sample.commits,sample.challenge,sample.response);
+ $('inspector').textContent=`ATTACK: TAMPER PROOF CONTEXT\nOriginal domain and step: ${sample.context.slice(0,160)}…\nAttack: verifier uses a modified context with the old commitments and response\nResult: ${ok?'ACCEPTED — FAILURE':'REJECTED: commitment mismatch'}`;
+ if(!ok){rejected++;setStatus('Tampered proof rejected. Its commitments were bound to the original exchange.','ok');}else setStatus('Tampered proof accepted — authentication logic broken.','error');
+ addLog(ok?'WARNING':'REJECTED','Modified exchange context',ok?'Verification bypass':'Old proof does not match the new context','attack');updateStats();
+}
+$('reset').addEventListener('click',generate);$('one').addEventListener('click',()=>run(1));$('five').addEventListener('click',()=>run(5));$('auto').addEventListener('click',()=>run(Infinity));$('stop').addEventListener('click',()=>{stopRequested=true;$('progressLabel').textContent='Stop requested — completing the current exchange first.';});
+$('impostor').addEventListener('click',attackImpostor);$('replay').addEventListener('click',attackReplay);$('tamper').addEventListener('click',attackTamper);
+$('rounds').addEventListener('change',()=>{if(!busy){updateStats();$('configMeta').textContent=$('configMeta').textContent.replace(/\d+ independent challenges per direction/, $('rounds').value+' independent challenges per direction');}});
+generate();
+})();
+</script>
+</body>
+</html>
